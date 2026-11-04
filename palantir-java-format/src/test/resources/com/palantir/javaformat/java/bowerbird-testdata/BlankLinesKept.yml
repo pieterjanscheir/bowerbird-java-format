@@ -1,0 +1,3 @@
+blankLines:
+  keepTyped: true
+  aroundClassBody: false

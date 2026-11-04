@@ -1,0 +1,5 @@
+javadoc:
+  removeBlankLinesInDescription: false
+  blankLineAfterParams: false
+  blankLineAfterReturn: false
+  singleSpaceAfterTagName: false

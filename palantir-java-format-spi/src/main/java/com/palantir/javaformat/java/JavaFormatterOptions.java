@@ -36,10 +36,7 @@ public final class JavaFormatterOptions {
         GOOGLE(1, 100),
 
         /** The AOSP-compliant configuration. */
-        AOSP(2, 100),
-
-        /** Bowerbird: the Bowerbird style, see the Bowerbird README. */
-        BOWERBIRD(2, 120);
+        AOSP(2, 100);
 
         private final int indentationMultiplier;
         private final int maxLineLength;

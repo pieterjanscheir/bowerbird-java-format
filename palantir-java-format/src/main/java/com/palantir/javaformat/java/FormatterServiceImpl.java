@@ -26,10 +26,22 @@ public final class FormatterServiceImpl implements FormatterService {
 
     private final Formatter formatter;
 
+    /**
+     * Bowerbird: formats with the rules in {@code bowerbird.yml} on the formatter's classpath, or Bowerbird's defaults
+     * without one. The Gradle, Spotless and IntelliJ plugins all load this class from the {@code palantirJavaFormat}
+     * classpath.
+     */
     public FormatterServiceImpl() {
+        this(BowerbirdConfig.load(FormatterServiceImpl.class.getClassLoader()));
+    }
+
+    /** Bowerbird: formats with {@code rules}. */
+    public FormatterServiceImpl(BowerbirdRules rules) {
+        // Style.PALANTIR only sets what the rules don't cover; it exists in every SPI version, unlike a Bowerbird
+        // style, which matters because the plugins load the SPI classes from their own jars.
         JavaFormatterOptions options =
-                JavaFormatterOptions.builder().style(Style.BOWERBIRD).build();
-        formatter = Formatter.createFormatter(options);
+                JavaFormatterOptions.builder().style(Style.PALANTIR).build();
+        formatter = Formatter.createFormatter(options, rules);
     }
 
     @Override

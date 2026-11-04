@@ -22,6 +22,9 @@ import com.palantir.javaformat.Newlines;
 import com.palantir.javaformat.java.JavaFormatterOptions.Style;
 import com.palantir.javaformat.jupiter.ParameterizedClass;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.TestTemplate;
@@ -78,7 +81,7 @@ public class BowerbirdIntegrationTest {
         try {
             Formatter formatter = createFormatter();
             String output = formatter.formatSourceAndFixImports(input);
-            output = StringWrapper.wrap(Style.BOWERBIRD.maxLineLength(), output, formatter);
+            output = StringWrapper.wrap(rules().lineLength(), output, formatter);
             if (isRecreate()) {
                 tests.writeFormatterOutput(name, output);
                 return;
@@ -89,12 +92,25 @@ public class BowerbirdIntegrationTest {
         }
     }
 
-    private static Formatter createFormatter() {
+    private Formatter createFormatter() {
         return new Formatter(
-                JavaFormatterOptions.builder()
-                        .style(JavaFormatterOptions.Style.BOWERBIRD)
-                        .build(),
-                isDebugMode());
+                JavaFormatterOptions.builder().style(Style.PALANTIR).build(), isDebugMode(), rules());
+    }
+
+    /**
+     * The rules for this test case: {@code bowerbird-testdata/<name>.yml} when it exists, so a test case can switch
+     * rules on or off, and Bowerbird's defaults otherwise.
+     */
+    private BowerbirdRules rules() {
+        String resource = "bowerbird-testdata/" + name + ".yml";
+        try (InputStream in = BowerbirdIntegrationTest.class.getResourceAsStream(resource)) {
+            if (in == null) {
+                return BowerbirdRules.defaults();
+            }
+            return BowerbirdConfig.parse(new String(in.readAllBytes(), StandardCharsets.UTF_8), resource);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @TestTemplate

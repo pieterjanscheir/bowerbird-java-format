@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bowerbird Java Format</title>
+<meta name="description" content="Bowerbird 是一款基于 palantir-java-format 的 Java 格式化工具，格式化规则与 IntelliJ 兼容。">
+<style>
+:root {
+  --bg: #fbfaf7;
+  --surface: #ffffff;
+  --code-bg: #f3f1ec;
+  --text: #1f2328;
+  --muted: #5b6168;
+  --border: #e3dfd6;
+  --accent: #1d4ed8;
+  --accent-soft: #e6edff;
+  --before: #b42318;
+  --after: #067647;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317;
+    --surface: #171a1f;
+    --code-bg: #1d2127;
+    --text: #e6e8eb;
+    --muted: #9aa1aa;
+    --border: #2b3038;
+    --accent: #7ea6ff;
+    --accent-soft: #1c2740;
+    --before: #ff8a80;
+    --after: #6fd39a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111317;
+  --surface: #171a1f;
+  --code-bg: #1d2127;
+  --text: #e6e8eb;
+  --muted: #9aa1aa;
+  --border: #2b3038;
+  --accent: #7ea6ff;
+  --accent-soft: #1c2740;
+  --before: #ff8a80;
+  --after: #6fd39a;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 var(--sans);
+}
+a { color: var(--accent); }
+.layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  max-width: 1180px;
+  margin: 0 auto;
+  gap: 48px;
+  padding: 0 24px;
+}
+nav {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: 40px 0;
+  font-size: 14px;
+}
+nav .brand { font-weight: 700; font-size: 18px; margin-bottom: 4px; }
+nav .tag { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+nav .lang { font-size: 13px; margin: -16px 0 20px; color: var(--muted); } nav .lang a { color: var(--accent); }
+nav ul { list-style: none; margin: 0 0 20px; padding: 0; }
+nav li a {
+  display: block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+nav li a:hover { background: var(--accent-soft); }
+nav .group { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 6px 10px; }
+main { padding: 40px 0 96px; min-width: 0; }
+header.hero { padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+header.hero h1 { font-size: 40px; line-height: 1.15; margin: 0 0 12px; letter-spacing: -.02em; }
+header.hero p.lede { font-size: 19px; color: var(--muted); margin: 0 0 20px; max-width: 46em; }
+.buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+h2 { font-size: 26px; margin: 56px 0 12px; letter-spacing: -.01em; }
+h3 { font-size: 19px; margin: 36px 0 8px; }
+p, li { max-width: 48em; }
+code { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font: 13px/1.55 var(--mono);
+  margin: 12px 0 20px;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0 20px; font-size: 14px; display: block; overflow-x: auto; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.callout {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  margin: 16px 0;
+  max-width: 48em;
+}
+.callout.warn { border-left-color: var(--before); }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 24px; }
+.compare > div { min-width: 0; }
+.compare pre { margin: 0; height: 100%; }
+.compare .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.compare .label.before { color: var(--before); }
+.compare .label.after { color: var(--after); }
+.rules { padding-left: 20px; }
+.rules li { margin-bottom: 4px; }
+footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 14px; }
+.theme-toggle {
+  margin-top: 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; gap: 0; padding: 0 16px; }
+  nav { position: static; max-height: none; padding: 24px 0 0; border-bottom: 1px solid var(--border); }
+  nav ul { display: flex; flex-wrap: wrap; gap: 2px; }
+  nav .group { width: 100%; }
+  main { padding-top: 24px; }
+  header.hero h1 { font-size: 32px; }
+  .compare { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav aria-label="文档">
+  <div class="brand">Bowerbird</div>
+  <div class="tag">Java 格式化工具</div>
+  <div class="lang"><a href="../">English</a> · <span aria-current="true">中文</span></div>
+  <div class="group">入门</div>
+  <ul>
+    <li><a href="#overview">概述</a></li>
+    <li><a href="#install">安装</a></li>
+    <li><a href="#gradle">Gradle</a></li>
+    <li><a href="#intellij">IntelliJ</a></li>
+  </ul>
+  <div class="group">配置</div>
+  <ul>
+    <li><a href="#configure">配置文件</a></li>
+    <li><a href="#presets">预设</a></li>
+    <li><a href="#command-line">命令行</a></li>
+    <li><a href="#settings">全部配置项</a></li>
+  </ul>
+  <div class="group">默认风格</div>
+  <ul>
+    <li><a href="#rules">规则概览</a></li>
+    <li><a href="#control-keywords">控制关键字</a></li>
+    <li><a href="#imports">导入</a></li>
+    <li><a href="#wrapping">换行</a></li>
+    <li><a href="#arrays">数组初始化器</a></li>
+    <li><a href="#blocks">代码块与语句</a></li>
+    <li><a href="#blank-lines">空行</a></li>
+    <li><a href="#javadoc">JavaDoc</a></li>
+  </ul>
+  <div class="group">开发</div>
+  <ul>
+    <li><a href="#building">构建</a></li>
+    <li><a href="#adding-rules">添加规则</a></li>
+    <li><a href="#upstream">同步上游</a></li>
+    <li><a href="#releasing">发布</a></li>
+  </ul>
+  <button class="theme-toggle" type="button" id="theme-toggle">切换主题</button>
+</nav>
+
+<main>
+<header class="hero" id="overview">
+  <h1>Bowerbird Java Format</h1>
+  <p class="lede">一款 Java 格式化工具，像园丁鸟（bowerbird）布置巢穴那样整理你的代码：一丝不苟，而且始终如一。</p>
+  <div class="buttons">
+    <a class="btn primary" href="#install">快速开始</a>
+    <a class="btn" href="https://github.com/pieterjanscheir/bowerbird-java-format">GitHub</a>
+    <a class="btn" href="https://github.com/pieterjanscheir/bowerbird-java-format/releases">版本发布</a>
+  </div>
+</header>
+
+<p>Bowerbird 是 <a href="https://github.com/palantir/palantir-java-format">palantir-java-format</a> 的修改版，而后者本身又基于 <a href="https://github.com/google/google-java-format">google-java-format</a>。与大多数格式化工具不同，它并不是一套固定的风格：每条格式化规则都是 <a href="#configure"><code>bowerbird.yml</code></a> 文件中的一个配置项，团队可以自行决定代码布局。没有配置文件时，使用的是 Bowerbird 的<a href="#rules">默认风格</a>，其输出与 IntelliJ IDEA 格式化器在目标代码风格下的结果一致。</p>
+<p>Bowerbird 采用与上游相同的 <a href="https://github.com/pieterjanscheir/bowerbird-java-format/blob/main/LICENSE">Apache 2.0 许可证</a>。署名信息见 <a href="https://github.com/pieterjanscheir/bowerbird-java-format/blob/main/NOTICE">NOTICE</a>。</p>
+
+<h2 id="install">安装</h2>
+<p>Bowerbird 发布在 GitHub Packages 上，坐标如下：</p>
+<table>
+  <thead><tr><th>构件</th><th>坐标</th></tr></thead>
+  <tbody>
+    <tr><td>格式化器</td><td><code>io.github.pieterjanscheir.bowerbird:bowerbird-java-format</code></td></tr>
+    <tr><td>SPI</td><td><code>io.github.pieterjanscheir.bowerbird:bowerbird-java-format-spi</code></td></tr>
+    <tr><td>JDK 引导模块</td><td><code>io.github.pieterjanscheir.bowerbird:bowerbird-java-format-jdk-bootstrap</code></td></tr>
+  </tbody>
+</table>
+<p>即使是公开包，GitHub Packages 也需要认证。请创建一个带有 <code>read:packages</code> 权限范围的<a href="https://github.com/settings/tokens">个人访问令牌（classic）</a>，并把该仓库添加到构建中：</p>
+<pre><code>repositories {
+    mavenCentral()
+    maven {
+        url = 'https://maven.pkg.github.com/pieterjanscheir/bowerbird-java-format'
+        credentials {
+            username = providers.gradleProperty('gpr.user').orElse(providers.environmentVariable('GITHUB_ACTOR')).get()
+            password = providers.gradleProperty('gpr.key').orElse(providers.environmentVariable('GITHUB_TOKEN')).get()
+        }
+    }
+}</code></pre>
+<p>在本地，把 <code>gpr.user</code> 和 <code>gpr.key</code> 写入 <code>~/.gradle/gradle.properties</code>。在 GitHub Actions 中，只要作业拥有 <code>packages: read</code> 权限，内置的 <code>GITHUB_TOKEN</code> 即可使用。</p>
+<p>每个版本也会把 jar 包附加到对应的 <a href="https://github.com/pieterjanscheir/bowerbird-java-format/releases">GitHub Release</a> 上，方便直接下载。</p>
+
+<h2 id="gradle">在 Gradle 中使用</h2>
+<p>模块目录和 Java 包名（<code>com.palantir.javaformat</code>）有意保持不变，这样上游的 Gradle 插件就能加载 Bowerbird。应用该插件，并让它使用 Bowerbird 而不是默认的格式化器：</p>
+<pre><code>plugins {
+    id 'com.palantir.java-format' version '&lt;upstream version Bowerbird is based on&gt;'
+}
+
+dependencies {
+    palantirJavaFormat 'io.github.pieterjanscheir.bowerbird:bowerbird-java-format:&lt;bowerbird version&gt;'
+}</code></pre>
+<p>该插件会配置 IntelliJ 使用这个格式化器。如需命令行的 <code>./gradlew format</code> 任务，请添加 <a href="https://github.com/palantir/gradle-baseline#compalantirbaseline-format">com.palantir.baseline-format</a> 插件。如果使用 <a href="https://github.com/diffplug/spotless/tree/main/plugin-gradle#palantir-java-format">Spotless</a>，请将 <code>palantirJavaFormat()</code> 配置为使用 Bowerbird 的构件，然后运行 <code>./gradlew spotlessApply</code>。</p>
+<div class="callout warn"><strong>不要启用原生格式化器</strong>（<code>palantir.native.formatter</code>）。它会下载 Palantir 预编译的二进制文件，其中不包含 Bowerbird 的规则。</div>
+
+<h2 id="intellij">在 IntelliJ IDEA 中使用</h2>
+<p>安装上游的 <a href="https://plugins.jetbrains.com/plugin/13180-palantir-java-format">palantir-java-format IntelliJ 插件</a>。它使用 Gradle 插件为项目解析出的格式化器版本，因此只要 <code>palantirJavaFormat</code> 依赖指向 Bowerbird，在 IntelliJ 中导入项目或运行以下命令即可：</p>
+<pre><code>./gradlew idea</code></pre>
+<p>请确认已在 <em>Settings → palantir-java-format Settings</em> 中启用该插件。之后 <em>Reformat Code</em> 就会使用 Bowerbird 进行格式化。</p>
+
+<h2 id="configure">配置规则</h2>
+<p>把 <code>bowerbird.yml</code> 放在一个单独的目录中，例如 <code>config/bowerbird/</code>，然后把该目录与 Bowerbird 一起加入 <code>palantirJavaFormat</code> 依赖：</p>
+<pre><code>dependencies {
+    palantirJavaFormat 'io.github.pieterjanscheir.bowerbird:bowerbird-java-format:&lt;bowerbird version&gt;'
+    palantirJavaFormat files('config/bowerbird')
+}</code></pre>
+<p>所有配置项都是可选的：只需列出想要修改的项，其余均保持<a href="#settings">默认值</a>。例如，保留 Bowerbird 的风格，但写成 <code>if (x)</code>、使用 2 个空格缩进，并保留你输入的空行：</p>
+<pre><code># config/bowerbird/bowerbird.yml
+indent: 2
+spaceAfterControlKeyword: true
+blankLines:
+  keepTyped: true</code></pre>
+<h3 id="presets">以 Palantir 或 Google 风格为起点</h3>
+<p>如果你喜欢上游 palantir-java-format 的风格，只想改动少数几处，可以从预设开始。<code>preset: palantir</code> 会把每条规则都设为上游的行为（已通过上游全部测试用例的验证），文件中的其他配置项再在此基础上进行调整。例如，使用 2 空格缩进的 Palantir 风格，这是上游<a href="https://github.com/palantir/palantir-java-format/issues/951">做不到</a>的：</p>
+<pre><code>preset: palantir
+indent: 2
+continuationIndent: 4</code></pre>
+<p>可用的预设有 <code>bowerbird</code>（默认）、<code>palantir</code>（120 个字符、4 空格缩进、8 空格续行缩进）和 <code>google</code>（上游的 Google 风格：与 <code>palantir</code> 类似，但为 100 个字符、2 空格缩进、4 空格续行缩进）。</p>
+
+<h3 id="command-line">在命令行中使用</h3>
+<p>对于 pre-commit 钩子、CI 脚本以及其他直接运行格式化器的工具，请构建命令行启动器，并通过 <code>--config</code> 传入配置文件：</p>
+<pre><code>./gradlew :palantir-java-format:installDist
+export JAVA_OPTS="$(for p in api code file parser tree util; do printf -- '--add-exports=jdk.compiler/com.sun.tools.javac.%s=ALL-UNNAMED ' $p; done)"
+palantir-java-format/build/install/palantir-java-format/bin/palantir-java-format \
+    --config bowerbird.yml --replace src/main/java/Example.java</code></pre>
+<p>在 JDK 16 及更高版本上需要 <code>JAVA_OPTS</code> 这一行：格式化器使用 JDK 自带的 Java 解析器，而 JDK 只有在加上这些参数时才会开放它。配置文件无效时，会输出一行错误信息并以退出码 2 结束。</p>
+<p>只指定 <code>--palantir</code> 而不指定 <code>--config</code> 时，会使用 classpath 上的 <code>bowerbird.yml</code>；如果没有，则使用 Bowerbird 的默认值。</p>
+
+<p>Gradle、Spotless 和 IntelliJ 都从 <code>palantirJavaFormat</code> 依赖中加载格式化器，因此读取的是同一个文件；这正是要把该目录放在那里的原因。需要注意以下几点：</p>
+<ul>
+  <li><strong>配置错误会中止格式化。</strong>未知的配置项、错误的类型或无效的 YAML 都会导致失败，错误信息会指出出错的配置项并列出所有有效配置项，因此拼写错误不会被忽略。</li>
+  <li><strong>只能有一个文件。</strong>如果格式化器的 classpath 上出现多个 <code>bowerbird.yml</code>，格式化会直接失败，而不会去猜测应该以哪个为准。</li>
+  <li><strong>IntelliJ</strong> 每次格式化时都会读取该文件，因此修改会在下一次 <em>Reformat Code</em> 时生效。添加该目录后，请运行一次 <code>./gradlew idea</code> 或重新加载 Gradle 项目。</li>
+  <li><strong>原生格式化器：</strong>native-image 格式化器无法读取配置文件。请保持 <code>palantir.native.formatter</code> 关闭。</li>
+</ul>
+
+<h3 id="settings">全部配置项</h3>
+<p>默认值即 Bowerbird 自身的风格。每个配置项都链接到展示其效果的示例。</p>
+<table>
+  <thead><tr><th>配置项</th><th>默认值</th><th>作用</th></tr></thead>
+  <tbody>
+    <tr><td><code>preset</code></td><td><code>bowerbird</code></td><td>其他所有配置项的起点：<code>bowerbird</code>、<code>palantir</code> 或 <code>google</code>。参见<a href="#presets">预设</a>。</td></tr>
+    <tr><td><code>lineLength</code></td><td><code>120</code></td><td>最大行宽，不能小于 40。</td></tr>
+    <tr><td><code>indent</code></td><td><code>4</code></td><td>每级代码块缩进的空格数。</td></tr>
+    <tr><td><code>continuationIndent</code></td><td><code>4</code></td><td><a href="#wrapping">换行后的续行</a>相对于其所接续的行缩进的空格数。上游使用 8。</td></tr>
+    <tr><td><code>spaceAfterControlKeyword</code></td><td><code>false</code></td><td>为 true 时写作 <code>if (x)</code>，为 false 时写作 <code>if(x)</code>。同样适用于 <code>for</code>、<code>while</code>、<code>switch</code>、<code>try</code>、<code>catch</code> 和 <code>synchronized</code>。<a href="#control-keywords">示例</a>。</td></tr>
+    <tr><td><code>arrayInitializerBraceSpaces</code></td><td><code>true</code></td><td>为 true 时写作 <code>{ 1, 2 }</code>，为 false 时写作 <code>{1, 2}</code>。<a href="#arrays">示例</a>。</td></tr>
+    <tr><td><code>closingParenOnOwnLine</code></td><td><code>true</code></td><td>当形参或实参按每行一个换行时，<code>)</code> 单独占一行。为 false 时，<code>)</code> 留在最后一行，作为最后一个实参传入的 lambda 也留在调用所在的行：<code>execute(account, () -&gt; {</code>。<a href="#wrapping">示例</a>。</td></tr>
+    <tr><td><code>tryResourcesOnOwnLines</code></td><td><code>true</code></td><td>包含多个资源的 try 语句中，每个资源各占一行，<code>(</code> 和 <code>)</code> 也各自单独占一行。</td></tr>
+    <tr><td><code>bodyWithoutBracesOnOwnLine</code></td><td><code>true</code></td><td>不带花括号的 <code>if</code>、<code>for</code> 或 <code>while</code> 语句体总是另起一行。为 false 时，<code>if (x) return;</code> 可以保持在同一行。<a href="#blocks">示例</a>。</td></tr>
+    <tr><td><code>blankLines.keepTyped</code></td><td><code>false</code></td><td>与上游一样，保留你在代码中和成员之间输入的空行。为 false 时这些空行会被删除，只由下面的规则添加空行。<a href="#blank-lines">示例</a>。</td></tr>
+    <tr><td><code>blankLines.aroundClassBody</code></td><td><code>true</code></td><td>在类声明头之后和类的右花括号之前各保留一个空行。</td></tr>
+    <tr><td><code>blankLines.betweenFields</code></td><td><code>false</code></td><td>像方法一样，在每个字段前后添加空行。为 false 时，字段之间不留空行，即使字段带有 JavaDoc 也是如此。</td></tr>
+    <tr><td><code>blankLines.aroundFieldsWithJavadoc</code></td><td><code>false</code></td><td>与上游一样，在每个带 JavaDoc 的字段前后添加空行，即使 <code>betweenFields</code> 为 false。</td></tr>
+    <tr><td><code>blankLines.aroundInterfaceMethods</code></td><td><code>false</code></td><td>在接口或注解类型的每个方法前后添加空行。</td></tr>
+    <tr><td><code>imports.groups</code></td><td><code>[static, java, javax, org, com, "*"]</code></td><td>按顺序排列的导入分组。每一项可以是包名前缀（<code>java</code>、<code>com.example</code>）、表示所有静态导入的 <code>static</code>，或表示其余所有导入的 <code>"*"</code>。每个导入归入前缀匹配最长的分组；没有任何匹配的导入放在最后。<a href="#imports">示例</a>。</td></tr>
+    <tr><td><code>imports.blankLineBetweenGroups</code></td><td><code>true</code></td><td>在导入分组之间添加空行。</td></tr>
+    <tr><td><code>javadoc.enabled</code></td><td><code>true</code></td><td>应用下面的 JavaDoc 配置项。为 false 时，JavaDoc 完全保持原样。<a href="#javadoc">示例</a>。</td></tr>
+    <tr><td><code>javadoc.removeBlankLinesInDescription</code></td><td><code>true</code></td><td>删除描述部分内的空行。为 false 时保留段落分隔（每处一个空行）。</td></tr>
+    <tr><td><code>javadoc.blankLineAfterDescription</code></td><td><code>true</code></td><td>在描述与第一个标签之间保留一个空行。</td></tr>
+    <tr><td><code>javadoc.blankLineAfterParams</code></td><td><code>true</code></td><td>当后面还有其他标签时，在 <code>@param</code> 标签块之后保留一个空行。</td></tr>
+    <tr><td><code>javadoc.blankLineAfterReturn</code></td><td><code>true</code></td><td>当后面还有其他标签时，在 <code>@return</code> 之后保留一个空行。</td></tr>
+    <tr><td><code>javadoc.singleSpaceAfterTagName</code></td><td><code>true</code></td><td><code>@param</code> 或 <code>@throws</code> 的名称与其描述之间恰好保留一个空格。</td></tr>
+  </tbody>
+</table>
+<p>下面是一个包含所有配置项及其默认值的完整文件，可直接复制后修改：</p>
+<pre><code>preset: bowerbird
+lineLength: 120
+indent: 4
+continuationIndent: 4
+spaceAfterControlKeyword: false
+arrayInitializerBraceSpaces: true
+closingParenOnOwnLine: true
+tryResourcesOnOwnLines: true
+bodyWithoutBracesOnOwnLine: true
+blankLines:
+  keepTyped: false
+  aroundClassBody: true
+  betweenFields: false
+  aroundFieldsWithJavadoc: false
+  aroundInterfaceMethods: false
+imports:
+  groups: [static, java, javax, org, com, "*"]
+  blankLineBetweenGroups: true
+javadoc:
+  enabled: true
+  removeBlankLinesInDescription: true
+  blankLineAfterDescription: true
+  blankLineAfterParams: true
+  blankLineAfterReturn: true
+  singleSpaceAfterTagName: true</code></pre>
+
+<h2 id="rules">默认风格</h2>
+<p>没有 <code>bowerbird.yml</code> 时，Bowerbird 按如下方式格式化。每条规则都是一个可以修改的<a href="#settings">配置项</a>，括号中注明了对应的配置项。与上游 palantir-java-format 相比：</p>
+<ul class="rules">
+  <li>控制关键字与 <code>(</code> 之间没有空格：<code>if(</code>、<code>for(</code>、<code>while(</code>、<code>switch(</code>、<code>try(</code>、<code>catch(</code>、<code>synchronized(</code>（<code>spaceAfterControlKeyword</code>）。</li>
+  <li>导入按分组排列：静态导入、<code>java</code>、<code>javax</code>、<code>org</code>、<code>com</code>、其余所有导入，分组之间空一行（<code>imports</code>）。</li>
+  <li>续行缩进为 4 个空格，而不是 8 个（<code>continuationIndent</code>）。</li>
+  <li>当形参或调用实参按每行一个换行时，<code>)</code> 单独占一行（<code>closingParenOnOwnLine</code>）。</li>
+  <li>数组初始化器的花括号内侧留空格：<code>{ 1, 2, 3 }</code>（<code>arrayInitializerBraceSpaces</code>）。</li>
+  <li>不带花括号的 <code>if</code>、<code>for</code> 或 <code>while</code> 语句体总是另起一行（<code>bodyWithoutBracesOnOwnLine</code>）；写在一行内的代码块会被展开。</li>
+  <li>包含多个资源的 try 语句：每行一个资源（<code>tryResourcesOnOwnLines</code>）。</li>
+  <li>删除代码内部的空行（<code>blankLines.keepTyped</code>）；类体在声明头之后和右花括号之前各有一个空行（<code>blankLines.aroundClassBody</code>），方法前后各有一个空行，字段之间没有空行（<code>blankLines.betweenFields</code>）。</li>
+  <li>JavaDoc 的标签块之间以空行分隔，标签名后只保留一个空格（<code>javadoc</code>）；JavaDoc 从不自动换行。</li>
+</ul>
+
+<h3 id="control-keywords">控制关键字</h3>
+<div class="compare">
+<div><div class="label before">格式化前</div><pre><code>if (values.length &gt; 0) {
+    return;
+} else if (values.length &lt; 0) {
+    throw new IllegalStateException();
+}
+for (int value : values) {
+    run(value);
+}
+try (AutoCloseable resource = open()) {
+    run(resource);
+} catch (IllegalStateException e) {
+    throw e;
+}</code></pre></div>
+<div><div class="label after">格式化后</div><pre><code>if(values.length &gt; 0) {
+    return;
+} else if(values.length &lt; 0) {
+    throw new IllegalStateException();
+}
+for(int value : values) {
+    run(value);
+}
+try(AutoCloseable resource = open()) {
+    run(resource);
+} catch(IllegalStateException e) {
+    throw e;
+}</code></pre></div>
+</div>
+
+<h3 id="imports">导入</h3>
+<div class="compare">
+<div><div class="label before">格式化前</div><pre><code>import net.other.Thing;
+import com.example.trading.Order;
+import java.util.List;
+import static java.util.Objects.requireNonNull;
+import org.slf4j.Logger;
+import javax.annotation.Nullable;
+import java.util.Map;
+import static org.assertj.core.api.Assertions.assertThat;
+import com.google.common.collect.ImmutableList;</code></pre></div>
+<div><div class="label after">格式化后</div><pre><code>import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+
+import com.example.trading.Order;
+import com.google.common.collect.ImmutableList;
+
+import net.other.Thing;</code></pre></div>
+</div>
+
+<h3 id="wrapping">换行</h3>
+<p>续行缩进 4 个空格。当实参拆分为每行一个时，右括号单独占一行。方法链在每个 <code>.</code> 之前换行。</p>
+<pre><code>OrderResult result = orderService.placeOrderWithAVeryLongName(
+    firstAccountArgument, secondInstrumentArgument, thirdQuantityArgument, fourth);
+
+service.submit(
+    builder.withAccount(firstAccountArgument)
+        .withInstrument(secondInstrumentArgument)
+        .build(),
+    options,
+    callback
+);
+
+executor.execute(
+    account,
+    () -&gt; {
+        run();
+        run();
+    }
+);
+
+List&lt;String&gt; symbols = orders.stream()
+    .filter(order -&gt; order.isOpen() &amp;&amp; order.quantity() &gt; minimumQuantity)
+    .map(Order::symbol)
+    .toList();</code></pre>
+
+<h3 id="arrays">数组初始化器</h3>
+<div class="compare">
+<div><div class="label before">格式化前</div><pre><code>int[] numbers = new int[]{1, 2, 3};
+String[] names = {"a", "b"};
+int[] empty = {};
+
+@SuppressWarnings({"unchecked", "rawtypes"})</code></pre></div>
+<div><div class="label after">格式化后</div><pre><code>int[] numbers = new int[] { 1, 2, 3 };
+String[] names = { "a", "b" };
+int[] empty = {};
+
+@SuppressWarnings({ "unchecked", "rawtypes" })</code></pre></div>
+</div>
+
+<h3 id="blocks">代码块与语句</h3>
+<div class="compare">
+<div><div class="label before">格式化前</div><pre><code>public String name() { return "order"; }
+
+void check(int x) {
+    if (x &gt; 0) return;
+    if (x &lt; 0) { x = 0; }
+    Runnable r = () -&gt; { run(); };
+    Object o = new Object() { };
+}</code></pre></div>
+<div><div class="label after">格式化后</div><pre><code>public String name() {
+    return "order";
+}
+
+void check(int x) {
+    if(x &gt; 0)
+        return;
+    if(x &lt; 0) {
+        x = 0;
+    }
+    Runnable r = () -&gt; {
+        run();
+    };
+    Object o = new Object() {};
+}</code></pre></div>
+</div>
+<p>空的主体，例如 <code>void empty() {}</code> 和 <code>static class Empty {}</code>，保持在一行内。</p>
+
+<h3 id="blank-lines">空行</h3>
+<p>方法内部输入的空行会被删除，注释前的空行也不例外。类、接口和嵌套类在声明头之后和右花括号之前各有一个空行。字段之间没有空行，即使字段带有 JavaDoc 也是如此；方法、构造器、嵌套类型和初始化块前后各有一个空行。接口方法之间没有空行。枚举在声明头之后和右花括号之前都没有空行。</p>
+<div class="compare">
+<div><div class="label before">格式化前</div><pre><code>class BlankLines {
+    private int first;
+
+
+    /** The second field. */
+    private int second;
+    BlankLines() {}
+    void run() {
+
+        int a = 1;
+
+        // explains b
+        int b = 2;
+
+    }
+}</code></pre></div>
+<div><div class="label after">格式化后</div><pre><code>class BlankLines {
+
+    private int first;
+    /** The second field. */
+    private int second;
+
+    BlankLines() {}
+
+    void run() {
+        int a = 1;
+        // explains b
+        int b = 2;
+    }
+
+}</code></pre></div>
+</div>
+
+<h3 id="javadoc">JavaDoc</h3>
+<p>描述部分内的空行会被删除。描述、<code>@param</code> 块和 <code>@return</code> 之后各跟一个空行。参数名和异常名后只保留一个空格。JavaDoc 从不重新换行，因此长行保持原样。</p>
+<div class="compare">
+<div><div class="label before">格式化前</div><pre><code>/**
+ * Places an order on the exchange.
+ *
+ * Second paragraph of the description.
+ * @param account   the client account
+ * @param order the order to place
+ * @return the placement result
+ * @throws IllegalStateException when refused
+ * @throws IllegalArgumentException   when invalid
+ */</code></pre></div>
+<div><div class="label after">格式化后</div><pre><code>/**
+ * Places an order on the exchange.
+ * Second paragraph of the description.
+ *
+ * @param account the client account
+ * @param order the order to place
+ *
+ * @return the placement result
+ *
+ * @throws IllegalStateException when refused
+ * @throws IllegalArgumentException when invalid
+ */</code></pre></div>
+</div>
+
+<h2 id="building">构建</h2>
+<p>需要 JDK 21，其余依赖都由 Gradle wrapper 自动下载。</p>
+<pre><code>./gradlew :palantir-java-format:test</code></pre>
+<p>如需在其他项目中试用本地构建，请将其发布到 Maven Local，并在该项目的仓库列表中添加 <code>mavenLocal()</code>：</p>
+<pre><code>./gradlew :palantir-java-format-spi:publishToMavenLocal \
+    :palantir-java-format-jdk-bootstrap:publishToMavenLocal \
+    :palantir-java-format:publishToMavenLocal</code></pre>
+<p>CI 会运行 <code>./gradlew build</code>，其中还包括 Error Prone 和项目自身的格式检查；如果构建修改了已跟踪的文件，CI 会失败。</p>
+
+<h2 id="adding-rules">添加格式化规则</h2>
+<ol>
+  <li>在 <code>palantir-java-format/src/test/resources/com/palantir/javaformat/java/bowerbird-testdata/</code> 中添加一对 <code>YourRule.input</code> 和 <code>YourRule.output</code> 文件，<code>BowerbirdIntegrationTest</code> 会自动识别它们。</li>
+  <li>把该配置项（连同默认值）添加到 <code>BowerbirdRules</code>，并加入 <code>BowerbirdConfig</code> 中的映射表，这样 <code>bowerbird.yml</code> 就能设置它。</li>
+  <li>修改格式化器（通常在 <code>JavaInputAstVisitor.java</code> 中），并用 <code>rule(BowerbirdRules::yourSetting)</code> 进行控制，以免影响上游风格及其测试。</li>
+  <li>如需测试非默认值，请在输入和输出文件旁添加 <code>YourRule.yml</code>；<code>BowerbirdIntegrationTest</code> 会将其应用到该测试用例。</li>
+  <li>运行测试。<code>./gradlew test -Drecreate=true</code> 会重新生成预期输出，因此请仔细检查由此产生的 diff。</li>
+  <li>使用目标代码风格，将输出与 IntelliJ 格式化器的结果进行对照：IntelliJ 不应改动 Bowerbird 的输出。</li>
+</ol>
+<p>每次提交只包含一条规则，这样与上游合并时出现的冲突更容易追溯。</p>
+
+<h2 id="upstream">与上游保持同步</h2>
+<p>每周运行的工作流会在 palantir-java-format 发布新版本时创建一个 pull request；如果合并出现冲突，则创建一个 issue。你也可以在 Actions 标签页中针对特定的上游标签或分支手动运行它。手动合并的方法如下：</p>
+<pre><code>git fetch upstream
+git merge upstream/develop</code></pre>
+<p>上游每次修改 <code>README.md</code> 都会产生冲突：请保留 Bowerbird 的版本；如果上游的改动有意义，再把它们应用到 <a href="https://github.com/pieterjanscheir/bowerbird-java-format/blob/main/docs/upstream-README.md"><code>docs/upstream-README.md</code></a>。</p>
+
+<h2 id="releasing">发布</h2>
+<p>推送一个版本标签即可构建、测试并发布该版本，版本号取自标签。</p>
+<pre><code>git tag 1.0.0
+git push origin 1.0.0</code></pre>
+<p>发布工作流会把格式化器、SPI 和 JDK 引导模块发布到 GitHub Packages，并创建一个包含 jar 包和自动生成的发布说明的 GitHub Release。</p>
+
+<footer>
+  Bowerbird 是 palantir-java-format 和 google-java-format 的分支，采用 Apache 2.0 许可证。
+  本页面由 <a href="https://github.com/pieterjanscheir/bowerbird-java-format/blob/main/docs/zh/index.html"><code>docs/zh/index.html</code></a> 构建，是英文页面的翻译版本。
+</footer>
+</main>
+</div>
+<script>
+(function () {
+  var root = document.documentElement;
+  try {
+    var saved = localStorage.getItem('theme');
+    if (saved) root.setAttribute('data-theme', saved);
+  } catch (e) {}
+  document.getElementById('theme-toggle').addEventListener('click', function () {
+    var current = root.getAttribute('data-theme')
+      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = current === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('theme', next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>

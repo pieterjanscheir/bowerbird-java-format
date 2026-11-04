@@ -1,0 +1,44 @@
+package example;
+
+class ControlKeywords {
+
+    void run(int[] values, Object lock) throws Exception {
+        if (values.length > 0) {
+            return;
+        } else if (values.length < 0) {
+            throw new IllegalStateException();
+        }
+        while (values.length > 3) {
+            break;
+        }
+        do {
+            run(values, lock);
+        } while (values.length > 2);
+        for (int i = 0; i < values.length; i++) {
+            run(values, lock);
+        }
+        for (int value : values) {
+            run(values, lock);
+        }
+        switch (values.length) {
+            case 1:
+                break;
+            default:
+                break;
+        }
+        synchronized (lock) {
+            run(values, lock);
+        }
+        try (AutoCloseable resource = () -> {}) {
+            run(values, lock);
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            throw e;
+        }
+        try {
+            run(values, lock);
+        } finally {
+            run(values, lock);
+        }
+    }
+
+}

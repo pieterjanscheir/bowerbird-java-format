@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import javax.annotation.Nullable;
 
 /** The main class for the Java formatter CLI. */
 public final class Main {
@@ -48,6 +49,10 @@ public final class Main {
     private final PrintWriter outWriter;
     private final PrintWriter errWriter;
     private final InputStream inStream;
+
+    /** Bowerbird: the rules for this run, set by {@link #format}; {@code null} for the Google and AOSP styles. */
+    @Nullable
+    private BowerbirdRules rules;
 
     public Main(PrintWriter outWriter, PrintWriter errWriter, InputStream inStream) {
         this.outWriter = outWriter;
@@ -72,6 +77,10 @@ public final class Main {
         } catch (UsageException e) {
             err.print(e.getMessage());
             result = 0;
+        } catch (BowerbirdConfig.BowerbirdConfigException e) {
+            // Bowerbird: an invalid bowerbird.yml is the user's to fix, so print the message, not a stack trace.
+            err.println("error: " + e.getMessage());
+            result = 2;
         } finally {
             err.flush();
             out.flush();
@@ -98,8 +107,23 @@ public final class Main {
 
         // TODO(someone): update this to always use Style.PALANTIR
         JavaFormatterOptions options = JavaFormatterOptions.builder()
-                .style(parameters.aosp() ? Style.AOSP : parameters.palantirStyle() ? Style.PALANTIR : Style.GOOGLE)
+                .style(
+                        parameters.aosp()
+                                ? Style.AOSP
+                                : parameters.palantirStyle()
+                                                || parameters.bowerbirdConfig().isPresent()
+                                        ? Style.PALANTIR
+                                        : Style.GOOGLE)
                 .build();
+        // Bowerbird: --palantir formats with Bowerbird's rules, from bowerbird.yml on the classpath when there is one.
+        // The upstream IntelliJ plugin and the native-image formatter run this class with --palantir, and their
+        // arguments can't be changed from here.
+        if (parameters.bowerbirdConfig().isPresent()) {
+            this.rules =
+                    BowerbirdConfig.load(Paths.get(parameters.bowerbirdConfig().get()));
+        } else {
+            this.rules = parameters.palantirStyle() ? BowerbirdConfig.load(Main.class.getClassLoader()) : null;
+        }
 
         if (parameters.stdin()) {
             return formatStdin(parameters, options);
@@ -127,7 +151,7 @@ public final class Main {
             try {
                 input = new String(Files.readAllBytes(path), UTF_8);
                 inputs.put(path, input);
-                results.put(path, executorService.submit(new FormatFileCallable(parameters, input, options)));
+                results.put(path, executorService.submit(new FormatFileCallable(parameters, input, options, rules)));
             } catch (IOException e) {
                 errWriter.println(fileName + ": could not read file: " + e.getMessage());
                 allOk = false;
@@ -194,7 +218,7 @@ public final class Main {
         String stdinFilename = parameters.assumeFilename().orElse(STDIN_FILENAME);
         boolean ok = true;
         try {
-            String output = new FormatFileCallable(parameters, input, options).call();
+            String output = new FormatFileCallable(parameters, input, options, rules).call();
             boolean changed = !input.equals(output);
             if (changed && parameters.setExitIfChanged()) {
                 ok = false;

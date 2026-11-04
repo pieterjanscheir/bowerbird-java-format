@@ -45,6 +45,7 @@ final class CommandLineOptions {
     private final Optional<String> assumeFilename;
     private final boolean reflowLongStrings;
     private final boolean outputReplacements;
+    private final Optional<String> bowerbirdConfig;
 
     CommandLineOptions(
             ImmutableList<String> files,
@@ -65,7 +66,8 @@ final class CommandLineOptions {
             boolean setExitIfChanged,
             Optional<String> assumeFilename,
             boolean reflowLongStrings,
-            boolean outputReplacements) {
+            boolean outputReplacements,
+            Optional<String> bowerbirdConfig) {
         this.files = files;
         this.inPlace = inPlace;
         this.lines = lines;
@@ -85,6 +87,12 @@ final class CommandLineOptions {
         this.assumeFilename = assumeFilename;
         this.reflowLongStrings = reflowLongStrings;
         this.outputReplacements = outputReplacements;
+        this.bowerbirdConfig = bowerbirdConfig;
+    }
+
+    /** Bowerbird: the bowerbird.yml to format with, from {@code --config}. */
+    Optional<String> bowerbirdConfig() {
+        return bowerbirdConfig;
     }
 
     /** The files to format. */
@@ -210,6 +218,7 @@ final class CommandLineOptions {
         private Optional<String> assumeFilename = Optional.empty();
         private boolean reflowLongStrings = true;
         private boolean outputReplacements = false;
+        private Optional<String> bowerbirdConfig = Optional.empty();
 
         private Builder() {}
 
@@ -305,8 +314,15 @@ final class CommandLineOptions {
             return this;
         }
 
+        Builder bowerbirdConfig(String bowerbirdConfig) {
+            this.bowerbirdConfig = Optional.of(bowerbirdConfig);
+            return this;
+        }
+
         CommandLineOptions build() {
             Preconditions.checkArgument(!aosp || !palantirStyle, "Cannot use both aosp and palantir style");
+            Preconditions.checkArgument(
+                    !aosp || bowerbirdConfig.isEmpty(), "Cannot use both aosp style and a Bowerbird config");
             return new CommandLineOptions(
                     files.build(),
                     inPlace,
@@ -326,7 +342,8 @@ final class CommandLineOptions {
                     setExitIfChanged,
                     assumeFilename,
                     reflowLongStrings,
-                    outputReplacements);
+                    outputReplacements,
+                    bowerbirdConfig);
         }
     }
 }

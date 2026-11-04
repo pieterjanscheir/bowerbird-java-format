@@ -20,15 +20,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Bowerbird: lays out JavaDoc blocks the way IntelliJ does with the Bowerbird code style. Text is never wrapped or
- * joined; only blank lines and the spacing after tag names change:
+ * Bowerbird: lays out JavaDoc blocks according to the {@code javadoc} rules in {@link BowerbirdRules}. Text is never
+ * wrapped or joined; only blank lines and the spacing after tag names change. With the default rules:
  *
  * <ul>
- *   <li>blank lines inside the description are removed
- *   <li>one blank line between the description and the first tag
+ *   <li>blank lines inside the description are removed ({@code removeBlankLinesInDescription})
+ *   <li>one blank line between the description and the first tag ({@code blankLineAfterDescription})
  *   <li>one blank line after the {@code @param} block and after {@code @return}, when more tags follow
+ *       ({@code blankLineAfterParams}, {@code blankLineAfterReturn})
  *   <li>no other blank lines between tags
  *   <li>one space between {@code @param} or {@code @throws} names and their description
+ *       ({@code singleSpaceAfterTagName})
  * </ul>
  *
  * <p>One-line comments and comments containing {@code <pre>} are left unchanged.
@@ -41,8 +43,8 @@ final class BowerbirdJavadoc {
 
     private BowerbirdJavadoc() {}
 
-    /** Returns the JavaDoc comment {@code text} (from {@code /**} to {@code *}{@code /}) in Bowerbird layout. */
-    static String format(String text, String lineSeparator) {
+    /** Returns the JavaDoc comment {@code text} (from {@code /**} to {@code *}{@code /}) laid out by {@code rules}. */
+    static String format(String text, String lineSeparator, BowerbirdRules rules) {
         if (!text.startsWith("/**") || !text.endsWith("*/") || text.contains("<pre")) {
             return text;
         }
@@ -56,11 +58,18 @@ final class BowerbirdJavadoc {
         for (String raw : rawLines) {
             String line = stripPrefix(raw);
             if (line.isEmpty()) {
-                continue; // blank lines are dropped, the right ones are added back below
+                if (!rules.javadocRemoveBlankLinesInDescription()
+                        && tags.isEmpty()
+                        && !description.isEmpty()
+                        && !description.get(description.size() - 1).isEmpty()) {
+                    description.add(""); // a paragraph break, kept once
+                }
+                continue; // other blank lines are dropped, the right ones are added back below
             }
             Matcher tag = TAG.matcher(line);
             if (tag.matches()) {
-                tags.add(new Tag(tag.group(1), normalizeTagLine(line)));
+                String tagLine = rules.javadocSingleSpaceAfterTagName() ? normalizeTagLine(line) : line;
+                tags.add(new Tag(tag.group(1), tagLine));
             } else if (tags.isEmpty()) {
                 description.add(line);
             } else {
@@ -71,8 +80,11 @@ final class BowerbirdJavadoc {
             return text;
         }
 
+        while (!description.isEmpty() && description.get(description.size() - 1).isEmpty()) {
+            description.remove(description.size() - 1); // no trailing paragraph break
+        }
         List<String> out = new ArrayList<>(description);
-        if (!description.isEmpty() && !tags.isEmpty()) {
+        if (!description.isEmpty() && !tags.isEmpty() && rules.javadocBlankLineAfterDescription()) {
             out.add("");
         }
         for (int i = 0; i < tags.size(); i++) {
@@ -81,8 +93,9 @@ final class BowerbirdJavadoc {
             boolean hasNext = i + 1 < tags.size();
             if (hasNext) {
                 Tag next = tags.get(i + 1);
-                boolean endOfParams = tag.name.equals("param") && !next.name.equals("param");
-                boolean afterReturn = tag.name.equals("return");
+                boolean endOfParams =
+                        rules.javadocBlankLineAfterParams() && tag.name.equals("param") && !next.name.equals("param");
+                boolean afterReturn = rules.javadocBlankLineAfterReturn() && tag.name.equals("return");
                 if (endOfParams || afterReturn) {
                     out.add("");
                 }

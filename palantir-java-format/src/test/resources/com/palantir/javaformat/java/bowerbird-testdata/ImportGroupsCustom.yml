@@ -1,0 +1,2 @@
+imports:
+  groups: [java, com.example, "*", static]
