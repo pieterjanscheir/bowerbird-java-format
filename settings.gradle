@@ -8,7 +8,7 @@ buildscript {
     }
 }
 apply plugin: 'com.palantir.jdks.settings'
-rootProject.name = 'palantir-java-format-parent'
+rootProject.name = 'bowerbird-java-format-parent'
 
 include ':gradle-palantir-java-format'
 include ':eclipse_plugin'

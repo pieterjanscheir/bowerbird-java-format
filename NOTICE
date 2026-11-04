@@ -1,0 +1,14 @@
+Bowerbird
+Copyright 2026 Pieter-Jan Scheir
+
+This product is a modified version of palantir-java-format
+(https://github.com/palantir/palantir-java-format), version 2.103.0,
+Copyright Palantir Technologies, Inc., which is itself based on
+google-java-format (https://github.com/google/google-java-format),
+Copyright Google LLC.
+
+Both are licensed under the Apache License, Version 2.0 (see LICENSE).
+Modifications are listed in the git history of this repository.
+
+"Palantir" and "Google" are trademarks of their respective owners.
+Bowerbird is not affiliated with or endorsed by either of them.
