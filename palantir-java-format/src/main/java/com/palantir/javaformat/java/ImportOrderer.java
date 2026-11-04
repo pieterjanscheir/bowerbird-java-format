@@ -60,7 +60,10 @@ public final class ImportOrderer {
         ImmutableList<Tok> toks = buildToks(text, CLASS_START);
         ImmutableList<String> groups = rules.importGroups();
         Comparator<Import> comparator = Comparator.<Import>comparingInt(imp -> bowerbirdGroup(imp, groups))
-                .thenComparing(Import::imported);
+                .thenComparing(Import::imported)
+                // Without a static group, `import a.B.C;` and `import static a.B.C;` share a group and a name. The
+                // sorted set would drop one of them if the comparator called them equal.
+                .thenComparing(Import::isStatic, trueFirst());
         BiFunction<Import, Import, Boolean> blankLine = rules.blankLineBetweenImportGroups()
                 ? (prev, curr) -> bowerbirdGroup(prev, groups) != bowerbirdGroup(curr, groups)
                 : (prev, curr) -> false;

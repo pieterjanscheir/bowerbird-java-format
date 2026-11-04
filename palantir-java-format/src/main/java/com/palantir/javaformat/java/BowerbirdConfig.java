@@ -15,6 +15,7 @@
 package com.palantir.javaformat.java;
 
 import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -85,7 +86,9 @@ public final class BowerbirdConfig {
      * native-image formatter free of it).
      */
     private static final class Yaml {
-        static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
+        // A setting written twice is an error, like an unknown one, instead of the last one silently winning.
+        static final ObjectMapper MAPPER =
+                new ObjectMapper(new YAMLFactory()).enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY);
     }
 
     private static final ImmutableMap<String, BiConsumer<BowerbirdRules.Builder, Value>> SETTINGS =

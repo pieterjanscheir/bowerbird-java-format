@@ -184,6 +184,38 @@ class BowerbirdConfigTest {
     }
 
     @Test
+    void a_setting_written_twice_is_an_error() {
+        assertThatThrownBy(
+                        () -> BowerbirdConfig.parse("indent: 2\nspaceAfterControlKeyword: true\nindent: 4\n", "my.yml"))
+                .isInstanceOf(BowerbirdConfigException.class)
+                .hasMessageContaining("my.yml is not valid YAML")
+                .hasMessageContaining("indent");
+        assertThatThrownBy(() ->
+                        BowerbirdConfig.parse("javadoc:\n  enabled: true\njavadoc:\n  enabled: false\n", "my.yml"))
+                .isInstanceOf(BowerbirdConfigException.class)
+                .hasMessageContaining("javadoc");
+    }
+
+    @Test
+    void import_groups_without_static_keep_a_static_and_a_normal_import_of_the_same_name() throws Exception {
+        String source = """
+            package example;
+
+            import a.B.C;
+            import static a.B.C;
+
+            class Example {
+                C field = C;
+            }
+            """;
+        BowerbirdRules rules = BowerbirdConfig.parse("imports:\n  groups: [java, \"*\"]\n", "test");
+
+        String imports = ImportOrderer.reorderImports(source, rules);
+
+        assertThat(imports).contains("import static a.B.C;").contains("import a.B.C;");
+    }
+
+    @Test
     void invalid_yaml_is_an_error() {
         assertThatThrownBy(() -> BowerbirdConfig.parse("indent: [2\n", "my.yml"))
                 .isInstanceOf(BowerbirdConfigException.class)
