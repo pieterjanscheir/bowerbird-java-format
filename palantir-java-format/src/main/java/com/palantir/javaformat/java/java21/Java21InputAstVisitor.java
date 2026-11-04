@@ -37,6 +37,11 @@ public class Java21InputAstVisitor extends Java14InputAstVisitor {
         super(builder, indentMultiplier);
     }
 
+    /** Bowerbird: see {@link JavaInputAstVisitor#JavaInputAstVisitor(OpsBuilder, int, boolean)}. */
+    public Java21InputAstVisitor(OpsBuilder builder, int indentMultiplier, boolean bowerbird) {
+        super(builder, indentMultiplier, bowerbird);
+    }
+
     @Override
     protected ExpressionTree getGuard(final CaseTree node) {
         return node.getGuard();

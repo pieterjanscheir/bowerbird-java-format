@@ -311,12 +311,58 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
      * @param builder the {@link OpsBuilder}
      */
     public JavaInputAstVisitor(OpsBuilder builder, int indentMultiplier) {
+        this(builder, indentMultiplier, false);
+    }
+
+    /**
+     * Bowerbird: creates a visitor that applies the Bowerbird rules when {@code bowerbird} is true. With
+     * {@code false} it behaves exactly like upstream palantir-java-format.
+     */
+    public JavaInputAstVisitor(OpsBuilder builder, int indentMultiplier, boolean bowerbird) {
         this.builder = builder;
         this.indentMultiplier = indentMultiplier;
+        this.bowerbird = bowerbird;
         minusTwo = Indent.Const.make(-2, indentMultiplier);
-        minusFour = Indent.Const.make(-4, indentMultiplier);
         plusTwo = Indent.Const.make(+2, indentMultiplier);
-        plusFour = Indent.Const.make(+4, indentMultiplier);
+        // Bowerbird: continuation indent is one indent unit (4 spaces) instead of two (8 spaces).
+        minusFour = Indent.Const.make(bowerbird ? -2 : -4, indentMultiplier);
+        plusFour = Indent.Const.make(bowerbird ? +2 : +4, indentMultiplier);
+    }
+
+    /** Bowerbird: true when the Bowerbird rules apply. */
+    protected final boolean bowerbird;
+
+    /**
+     * Bowerbird: blank lines typed in the input are kept upstream, but removed by Bowerbird. Used everywhere except
+     * imports, where blank lines separate the import groups.
+     */
+    protected final BlankLineWanted preserveBlankLine() {
+        return bowerbird ? BlankLineWanted.NO : BlankLineWanted.PRESERVE;
+    }
+
+    /**
+     * Bowerbird: a break before a closing parenthesis, placing it on its own line, aligned with the start of the
+     * construct, whenever the enclosing level breaks.
+     */
+    protected final void closingParenBreak() {
+        if (bowerbird) {
+            builder.breakOp(FillMode.UNIFIED, "", minusFour);
+        }
+    }
+
+    /** Bowerbird: one blank line after a class header and before a class's closing brace. */
+    protected final BlankLineWanted classBodyEdgeBlankLine(BlankLineWanted upstream) {
+        return bowerbird ? BlankLineWanted.YES : upstream;
+    }
+
+    /**
+     * Bowerbird: the space between a control keyword and its opening parenthesis. Bowerbird writes {@code if(x)};
+     * upstream writes {@code if (x)}.
+     */
+    protected final void spaceAfterControlKeyword() {
+        if (!bowerbird) {
+            builder.space();
+        }
     }
 
     /** A record of whether we have visited into an expression. */
@@ -541,7 +587,9 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             builder.open(plusTwo, BreakBehaviours.breakThisLevel(), LastLevelBreakability.ACCEPT_INLINE_CHAIN);
             tokenBreakTrailingComment("{", plusTwo);
             boolean hasTrailingComma = hasTrailingToken(builder.getInput(), expressions, ",");
-            builder.breakOp(hasTrailingComma ? FillMode.FORCED : FillMode.UNIFIED, "", ZERO);
+            // Bowerbird: a space inside the braces when the initializer fits on one line: { 1, 2, 3 }
+            String insideBraces = bowerbird ? " " : "";
+            builder.breakOp(hasTrailingComma ? FillMode.FORCED : FillMode.UNIFIED, insideBraces, ZERO);
             if (allowFilledElementsOnOwnLine) {
                 builder.open(ZERO);
             }
@@ -560,7 +608,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 builder.close();
             }
             builder.close();
-            builder.breakOp();
+            builder.breakOp(insideBraces);
             token("}", plusTwo);
             builder.close();
         }
@@ -710,7 +758,8 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         addArguments(node.getArguments(), plusFour);
         builder.close();
         if (node.getClassBody() != null) {
-            addBodyDeclarations(node.getClassBody().getMembers(), BracesOrNot.YES, FirstDeclarationsOrNot.YES);
+            addBodyDeclarations(
+                    node.getClassBody().getMembers(), BracesOrNot.YES, FirstDeclarationsOrNot.YES, Anonymous.YES);
         }
         return null;
     }
@@ -758,7 +807,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             builder.breakOp(" ");
         }
         token("while");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         scan(skipParen(node.getCondition()), null);
         token(")");
@@ -778,7 +827,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         sync(node);
         builder.open(ZERO);
         token("for");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         builder.open(ZERO);
         visitToDeclare(
@@ -810,7 +859,8 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             addArguments(init.getArguments(), plusFour);
         }
         if (init.getClassBody() != null) {
-            addBodyDeclarations(init.getClassBody().getMembers(), BracesOrNot.YES, FirstDeclarationsOrNot.YES);
+            addBodyDeclarations(
+                    init.getClassBody().getMembers(), BracesOrNot.YES, FirstDeclarationsOrNot.YES, Anonymous.YES);
         }
     }
 
@@ -888,7 +938,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 if (!first) {
                     token(",");
                     builder.forcedBreak();
-                    builder.blankLineWanted(BlankLineWanted.PRESERVE);
+                    builder.blankLineWanted(preserveBlankLine());
                 }
                 markForPartialFormat();
                 visitEnumConstantDeclaration(enumConstant);
@@ -1001,7 +1051,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     public Void visitForLoop(ForLoopTree node, Void unused) {
         sync(node);
         token("for");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         builder.open(plusFour);
         builder.open(
@@ -1090,7 +1140,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 builder.space();
             }
             token("if");
-            builder.space();
+            spaceAfterControlKeyword();
             token("(");
             scan(skipParen(expressions.get(i)), null);
             token(")");
@@ -1315,6 +1365,8 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 }
                 first = false;
             }
+            // Bowerbird: ')' on its own line when the arguments are wrapped.
+            closingParenBreak();
             token(")");
             builder.close();
             builder.close();
@@ -1533,7 +1585,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         } else {
             builder.open(plusTwo);
             builder.forcedBreak();
-            builder.blankLineWanted(BlankLineWanted.PRESERVE);
+            builder.blankLineWanted(preserveBlankLine());
             visitStatements(node.getBody().getStatements(), false);
             builder.close();
             builder.forcedBreak();
@@ -1864,7 +1916,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     protected void visitSwitch(ExpressionTree expression, List<? extends CaseTree> cases) {
         builder.open(ZERO);
         token("switch");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         scan(skipParen(expression), null);
         token(")");
@@ -1875,7 +1927,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         boolean afterFirstToken = false;
         for (CaseTree caseTree : cases) {
             if (afterFirstToken) {
-                builder.blankLineWanted(BlankLineWanted.PRESERVE);
+                builder.blankLineWanted(preserveBlankLine());
             }
             scan(caseTree, null);
             afterFirstToken = true;
@@ -1891,7 +1943,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     public Void visitSynchronized(SynchronizedTree node, Void unused) {
         sync(node);
         token("synchronized");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         builder.open(plusFour);
         builder.breakOp();
@@ -1918,10 +1970,19 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         sync(node);
         builder.open(ZERO);
         token("try");
-        builder.space();
+        if (node.getResources().isEmpty()) {
+            builder.space();
+        } else {
+            spaceAfterControlKeyword();
+        }
         if (!node.getResources().isEmpty()) {
             token("(");
             builder.open(node.getResources().size() > 1 ? plusFour : ZERO);
+            boolean resourcesOnOwnLines = bowerbird && node.getResources().size() > 1;
+            if (resourcesOnOwnLines) {
+                // Bowerbird: several resources go one per line between '(' and ')' on their own lines.
+                builder.forcedBreak();
+            }
             boolean first = true;
             for (Tree resource : node.getResources()) {
                 if (!first) {
@@ -1954,6 +2015,9 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             if (builder.peekToken().equals(Optional.of(";"))) {
                 token(";");
                 builder.space();
+            }
+            if (resourcesOnOwnLines) {
+                builder.breakOp(FillMode.FORCED, "", minusFour);
             }
             token(")");
             builder.close();
@@ -2065,7 +2129,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     public Void visitWhileLoop(WhileLoopTree node, Void unused) {
         sync(node);
         token("while");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         scan(skipParen(node.getCondition()), null);
         token(")");
@@ -2140,7 +2204,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             if (allowLeadingBlankLine == AllowLeadingBlankLine.NO) {
                 builder.blankLineWanted(BlankLineWanted.NO);
             } else {
-                builder.blankLineWanted(BlankLineWanted.PRESERVE);
+                builder.blankLineWanted(preserveBlankLine());
             }
             visitStatements(node.getStatements(), false);
             builder.close();
@@ -2149,7 +2213,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             if (allowTrailingBlankLine == AllowTrailingBlankLine.NO) {
                 builder.blankLineWanted(BlankLineWanted.NO);
             } else {
-                builder.blankLineWanted(BlankLineWanted.PRESERVE);
+                builder.blankLineWanted(preserveBlankLine());
             }
             markForPartialFormat();
             token("}", plusTwo);
@@ -2170,7 +2234,12 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 break;
             default:
                 builder.open(plusTwo);
-                builder.breakOp(" ");
+                if (bowerbird) {
+                    // Bowerbird: a body without braces always goes on its own line: if(x)\n    return;
+                    builder.forcedBreak();
+                } else {
+                    builder.breakOp(" ");
+                }
                 scan(node, null);
                 builder.close();
         }
@@ -2187,7 +2256,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 builder.forcedBreak();
             }
             if (!first) {
-                builder.blankLineWanted(BlankLineWanted.PRESERVE);
+                builder.blankLineWanted(preserveBlankLine());
             }
             markForPartialFormat();
             first = false;
@@ -2335,7 +2404,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         sync(node);
         builder.space();
         token("catch");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         builder.open(plusFour);
         VariableTree ex = node.getParameter();
@@ -2464,6 +2533,10 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 builder.blankLineWanted(BlankLineWanted.conditional(declarationAnnotationBreak));
             }
             first = false;
+        }
+        if (!isRecordParams) {
+            // Bowerbird: ')' on its own line when the parameters wrap. Record headers do this one level up.
+            closingParenBreak();
         }
         builder.close();
     }
@@ -3202,6 +3275,10 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                     builder.close();
                     first = false;
                 }
+                if (bowerbird) {
+                    // Bowerbird: tabular arguments always span lines, so ')' goes on its own line.
+                    builder.breakOp(FillMode.FORCED, "", minusFour);
+                }
                 builder.close();
             } else if (isFormatMethod(arguments)) {
                 builder.breakOp();
@@ -3215,7 +3292,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 builder.close();
             } else {
                 builder.breakOp();
-                argList(arguments);
+                argList(arguments, /* closingParenOnOwnLine= */ true);
             }
         }
         token(")");
@@ -3223,6 +3300,11 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     }
 
     private void argList(List<? extends ExpressionTree> arguments) {
+        argList(arguments, false);
+    }
+
+    /** Bowerbird: with {@code closingParenOnOwnLine}, ')' goes on its own line when the arguments wrap. */
+    private void argList(List<? extends ExpressionTree> arguments, boolean closingParenOnOwnLine) {
         builder.open(OpenOp.builder()
                 .debugName("argList")
                 .plusIndent(ZERO)
@@ -3239,6 +3321,9 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             }
             scan(argument, null);
             first = false;
+        }
+        if (closingParenOnOwnLine) {
+            closingParenBreak();
         }
         builder.close();
     }
@@ -3739,6 +3824,20 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     @SuppressWarnings("for-rollout:NullAway")
     protected void addBodyDeclarations(
             List<? extends Tree> bodyDeclarations, BracesOrNot braces, FirstDeclarationsOrNot first0) {
+        addBodyDeclarations(bodyDeclarations, braces, first0, Anonymous.NO);
+    }
+
+    /** Bowerbird: whether a class body belongs to an anonymous class (or an enum constant's body). */
+    protected enum Anonymous {
+        YES,
+        NO
+    }
+
+    protected void addBodyDeclarations(
+            List<? extends Tree> bodyDeclarations,
+            BracesOrNot braces,
+            FirstDeclarationsOrNot first0,
+            Anonymous anonymous) {
         if (bodyDeclarations.isEmpty()) {
             if (braces.isYes()) {
                 builder.space();
@@ -3762,12 +3861,22 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 Tree bodyDeclaration = it.next();
                 dropEmptyDeclarations();
                 builder.forcedBreak();
-                boolean thisOneGetsBlankLineBefore =
-                        !(bodyDeclaration instanceof VariableTree) || hasJavaDoc(bodyDeclaration);
+                boolean thisOneGetsBlankLineBefore = bowerbird
+                        ? bowerbirdBlankLineAround(bodyDeclaration)
+                        : !(bodyDeclaration instanceof VariableTree) || hasJavaDoc(bodyDeclaration);
                 if (first) {
-                    builder.blankLineWanted(PRESERVE);
+                    if (braces.isYes()) {
+                        builder.blankLineWanted(classBodyEdgeBlankLine(PRESERVE));
+                    } else if (bowerbird) {
+                        // Bowerbird: enum members after the constants follow the normal member rule.
+                        builder.blankLineWanted(thisOneGetsBlankLineBefore ? YES : BlankLineWanted.NO);
+                    } else {
+                        builder.blankLineWanted(PRESERVE);
+                    }
                 } else if (!first && (thisOneGetsBlankLineBefore || lastOneGotBlankLineBefore)) {
                     builder.blankLineWanted(YES);
+                } else if (bowerbird) {
+                    builder.blankLineWanted(BlankLineWanted.NO);
                 }
                 markForPartialFormat();
 
@@ -3789,11 +3898,40 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             builder.forcedBreak();
             markForPartialFormat();
             if (braces.isYes()) {
-                builder.blankLineWanted(BlankLineWanted.NO);
+                // Bowerbird: anonymous classes get no blank line before their closing brace.
+                builder.blankLineWanted(
+                        anonymous == Anonymous.YES ? BlankLineWanted.NO : classBodyEdgeBlankLine(BlankLineWanted.NO));
                 token("}", plusTwo);
                 builder.close();
             }
         }
+    }
+
+    /**
+     * Bowerbird: whether a class member gets a blank line before and after it. Fields get none (also with JavaDoc);
+     * methods get one, except in interfaces; nested types and initializers always get one.
+     */
+    private boolean bowerbirdBlankLineAround(Tree bodyDeclaration) {
+        if (bodyDeclaration instanceof VariableTree) {
+            return false;
+        }
+        if (bodyDeclaration instanceof MethodTree && isInInterface()) {
+            return false;
+        }
+        return true;
+    }
+
+    /** Bowerbird: true when the member being visited is declared directly in an interface or annotation type. */
+    private boolean isInInterface() {
+        TreePath path = getCurrentPath();
+        while (path != null && !(path.getLeaf() instanceof ClassTree)) {
+            path = path.getParentPath();
+        }
+        if (path == null) {
+            return false;
+        }
+        Tree.Kind kind = path.getLeaf().getKind();
+        return kind == Tree.Kind.INTERFACE || kind == Tree.Kind.ANNOTATION_TYPE;
     }
 
     /** Gets the permits clause for the given node. This is only available in Java 15 and later. */

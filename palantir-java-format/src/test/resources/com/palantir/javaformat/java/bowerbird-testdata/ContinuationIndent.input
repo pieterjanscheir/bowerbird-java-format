@@ -1,0 +1,11 @@
+package example;
+
+class ContinuationIndent {
+
+    void place(OrderService orderService, String account, String instrument, int quantity, double limitPrice, String timeInForce) {
+        OrderResult result = orderService.place(account, instrument, quantity, limitPrice, timeInForce, "some-long-reference");
+        String symbols = orders.stream().filter(Order::isOpen).map(Order::symbol).filter(symbol -> symbol.length() > 3).collect(joining());
+        boolean valid = quantity > 0 && limitPrice != null && account != null && instrument != null && timeInForce != null;
+    }
+
+}

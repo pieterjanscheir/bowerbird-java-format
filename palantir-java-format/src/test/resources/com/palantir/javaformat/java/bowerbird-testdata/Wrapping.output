@@ -1,0 +1,41 @@
+package example;
+
+class Wrapping {
+
+    record Order(
+        String account, String instrument, int quantity, double limitPrice, String timeInForce, String reference
+    ) {}
+
+    @SuppressWarnings(
+        value = { "unchecked", "rawtypes" },
+        justification = "a long justification for suppressing these warnings here"
+    )
+    void place(
+        String account, String instrument, int quantity, double limitPrice, String timeInForce, String reference) {
+        OrderResult result = orderService.place(account, instrument, quantity, limitPrice, timeInForce, reference, "x");
+        orderService.place(
+            account, instrument, quantity, limitPrice, timeInForce, reference, "another-argument", "more");
+        try(
+            InputStream first = openTheFirstStream(account, instrument);
+            InputStream second = openTheSecondStream(account)
+        ) {
+            run();
+        }
+        for(int index = 0; index < someVeryLongCollectionName.size() && index < anotherVeryLongLimitName; index++) {
+            run();
+        }
+        String label =
+            quantity > 1000 ? "a large order with a long label text" : "a small order with a long label text too";
+        assert quantity > 0 : "the quantity must be positive but it was not, which is a problem for this order";
+        String text = "first part of the text " + account + " second part of the text " + instrument + " end";
+    }
+
+    enum Venue {
+        XETRA_EXCHANGE,
+        EURONEXT_BRUSSELS,
+        EURONEXT_AMSTERDAM,
+        LONDON_STOCK_EXCHANGE,
+        NEW_YORK_STOCK_EXCHANGE
+    }
+
+}

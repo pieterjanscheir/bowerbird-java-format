@@ -60,11 +60,22 @@ public final class JavaOutput extends Output {
      * @param javaInput the {@link JavaInput}, used to match up blank lines in the output
      */
     public JavaOutput(JavaInput javaInput, InputMetadata inputMetadata) {
+        this(javaInput, inputMetadata, false);
+    }
+
+    /**
+     * Bowerbird: with {@code bowerbird} true, a blank line typed before a comment is only kept where the formatter
+     * keeps blank lines anyway (for example between import groups), instead of always.
+     */
+    public JavaOutput(JavaInput javaInput, InputMetadata inputMetadata, boolean bowerbird) {
         this.lineSeparator = javaInput.getLineSeparator();
         this.javaInput = javaInput;
         kN = javaInput.getkN();
         this.inputMetadata = inputMetadata;
+        this.bowerbird = bowerbird;
     }
+
+    private final boolean bowerbird;
 
     // TODO(jdd): Add invariant.
     @Override
@@ -87,7 +98,9 @@ public final class JavaOutput extends Output {
              * there's a blank line here and it's a comment.
              */
             BlankLineWanted wanted = inputMetadata.blankLines().getOrDefault(lastK, BlankLineWanted.NO);
-            if (isComment(text) ? sawNewlines : wanted.wanted(state).orElse(sawNewlines)) {
+            if ((isComment(text) && !bowerbird)
+                    ? sawNewlines
+                    : wanted.wanted(state).orElse(sawNewlines)) {
                 ++newlinesPending;
             }
         }

@@ -24,6 +24,7 @@ import com.google.common.collect.Iterables;
 import com.palantir.javaformat.Op;
 import com.palantir.javaformat.OpsBuilder;
 import com.palantir.javaformat.OpsBuilder.BlankLineWanted;
+import com.palantir.javaformat.doc.FillMode;
 import com.palantir.javaformat.java.JavaInputAstVisitor;
 import com.sun.source.tree.BindingPatternTree;
 import com.sun.source.tree.BlockTree;
@@ -65,6 +66,11 @@ public class Java14InputAstVisitor extends JavaInputAstVisitor {
 
     public Java14InputAstVisitor(OpsBuilder builder, int indentMultiplier) {
         super(builder, indentMultiplier);
+    }
+
+    /** Bowerbird: see {@link JavaInputAstVisitor#JavaInputAstVisitor(OpsBuilder, int, boolean)}. */
+    public Java14InputAstVisitor(OpsBuilder builder, int indentMultiplier, boolean bowerbird) {
+        super(builder, indentMultiplier, bowerbird);
     }
 
     @Override
@@ -193,10 +199,18 @@ public class Java14InputAstVisitor extends JavaInputAstVisitor {
             token("(");
             if (!parameters.isEmpty()) {
                 // Break before args.
-                builder.breakToFill("");
+                if (bowerbird) {
+                    // Bowerbird: '(' and ')' break together, so ')' is on its own line whenever the header wraps.
+                    builder.breakOp(FillMode.UNIFIED, "", ZERO);
+                } else {
+                    builder.breakToFill("");
+                }
             }
             // record headers can't declare receiver parameters
             visitFormals(/* receiver= */ Optional.empty(), parameters);
+            if (!parameters.isEmpty()) {
+                closingParenBreak();
+            }
             token(")");
             if (hasSuperInterfaceTypes) {
                 builder.breakToFill(" ");

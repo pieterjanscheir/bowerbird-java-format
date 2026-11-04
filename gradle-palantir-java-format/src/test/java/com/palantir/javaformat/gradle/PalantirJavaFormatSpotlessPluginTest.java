@@ -110,18 +110,24 @@ class PalantirJavaFormatSpotlessPluginTest {
         result.assertThat().output().contains(expectedOutput);
     }
 
+    // Bowerbird: the formatter service uses the BOWERBIRD style, so this is Bowerbird's output.
     private String validJavaFile() {
         return """
             package test;
 
             public class Test {
+
                 void test() {
                     int x = 1;
                     System.out.println("Hello");
-                    Optional.of("hello").orElseGet(() -> {
-                        return "Hello World";
-                    });
+                    Optional.of("hello")
+                        .orElseGet(
+                            () -> {
+                                return "Hello World";
+                            }
+                        );
                 }
+
             }
             """;
     }

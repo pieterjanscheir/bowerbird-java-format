@@ -161,6 +161,37 @@ public final class ImportOrderer {
         return !prev.topLevel().equals(curr.topLevel());
     }
 
+    /**
+     * Bowerbird: the import group of an import. Static imports first, then {@code java}, {@code javax}, {@code org},
+     * {@code com} and everything else.
+     */
+    private static int bowerbirdGroup(Import imp) {
+        if (imp.isStatic()) {
+            return 0;
+        }
+        switch (imp.topLevel()) {
+            case "java":
+                return 1;
+            case "javax":
+                return 2;
+            case "org":
+                return 3;
+            case "com":
+                return 4;
+            default:
+                return 5;
+        }
+    }
+
+    /** Bowerbird: orders imports by {@link #bowerbirdGroup}, then by name. */
+    private static final Comparator<Import> BOWERBIRD_IMPORT_COMPARATOR =
+            Comparator.comparingInt(ImportOrderer::bowerbirdGroup).thenComparing(Import::imported);
+
+    /** Bowerbird: one blank line between import groups. */
+    private static boolean shouldInsertBlankLineBowerbird(Import prev, Import curr) {
+        return bowerbirdGroup(prev) != bowerbirdGroup(curr);
+    }
+
     private final String text;
     private final ImmutableList<Tok> toks;
     private final String lineSeparator;
@@ -174,6 +205,9 @@ public final class ImportOrderer {
         if (style.equals(Style.GOOGLE) || style.equals(Style.PALANTIR)) {
             this.importComparator = GOOGLE_IMPORT_COMPARATOR;
             this.shouldInsertBlankLineFn = ImportOrderer::shouldInsertBlankLineGoogle;
+        } else if (style.equals(Style.BOWERBIRD)) {
+            this.importComparator = BOWERBIRD_IMPORT_COMPARATOR;
+            this.shouldInsertBlankLineFn = ImportOrderer::shouldInsertBlankLineBowerbird;
         } else if (style.equals(Style.AOSP)) {
             this.importComparator = AOSP_IMPORT_COMPARATOR;
             this.shouldInsertBlankLineFn = ImportOrderer::shouldInsertBlankLineAosp;

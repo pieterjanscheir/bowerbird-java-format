@@ -1,0 +1,33 @@
+package example;
+
+class OneLine {
+
+    public String name() {
+        return "order";
+    }
+
+    public int size() {
+        return 1;
+    }
+
+    void empty() {}
+
+    void check(int x) {
+        if(x > 0)
+            return;
+        if(x < 0) {
+            x = 0;
+        }
+        Runnable r = () -> {
+            run();
+        };
+        Runnable s = () -> run();
+    }
+
+    static class Empty {}
+
+    void anonymous() {
+        Object o = new Object() {};
+    }
+
+}

@@ -137,7 +137,10 @@ public final class Formatter {
         } else if (getRuntimeVersion() >= 14) {
             visitor = createVisitor("com.palantir.javaformat.java.java14.Java14InputAstVisitor", opsBuilder, options);
         } else {
-            visitor = new JavaInputAstVisitor(opsBuilder, options.indentationMultiplier());
+            visitor = new JavaInputAstVisitor(
+                    opsBuilder,
+                    options.indentationMultiplier(),
+                    options.style() == JavaFormatterOptions.Style.BOWERBIRD);
         }
 
         visitor.scan(unit, null);
@@ -154,7 +157,8 @@ public final class Formatter {
         State finalState =
                 doc.computeBreaks(commentsHelper, options.maxLineLength(), State.startingState(), observationNode);
 
-        JavaOutput javaOutput = new JavaOutput(javaInput, opsOutput.inputMetadata());
+        JavaOutput javaOutput = new JavaOutput(
+                javaInput, opsOutput.inputMetadata(), options.style() == JavaFormatterOptions.Style.BOWERBIRD);
         doc.write(finalState, javaOutput);
         javaOutput.flush();
 
@@ -208,8 +212,11 @@ public final class Formatter {
         try {
             return Class.forName(className)
                     .asSubclass(JavaInputAstVisitor.class)
-                    .getConstructor(OpsBuilder.class, int.class)
-                    .newInstance(builder, options.indentationMultiplier());
+                    .getConstructor(OpsBuilder.class, int.class, boolean.class)
+                    .newInstance(
+                            builder,
+                            options.indentationMultiplier(),
+                            options.style() == JavaFormatterOptions.Style.BOWERBIRD);
         } catch (ReflectiveOperationException e) {
             throw new LinkageError(e.getMessage());
         }
