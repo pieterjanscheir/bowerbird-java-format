@@ -1,0 +1,11 @@
+version: 2
+updates:
+  # Keeps the pinned GitHub Actions up to date. Gradle dependencies are left alone on purpose: they come in when
+  # upstream palantir-java-format is merged, and changing them here would cause merge conflicts.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
