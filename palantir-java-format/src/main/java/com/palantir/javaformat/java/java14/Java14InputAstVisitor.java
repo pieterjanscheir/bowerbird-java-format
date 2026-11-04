@@ -67,6 +67,11 @@ public class Java14InputAstVisitor extends JavaInputAstVisitor {
         super(builder, indentMultiplier);
     }
 
+    /** Bowerbird: see {@link JavaInputAstVisitor#JavaInputAstVisitor(OpsBuilder, int, boolean)}. */
+    public Java14InputAstVisitor(OpsBuilder builder, int indentMultiplier, boolean bowerbird) {
+        super(builder, indentMultiplier, bowerbird);
+    }
+
     @Override
     protected void handleModule(boolean first, CompilationUnitTree node) {
         if (COMPILATION_UNIT_TREE_GET_MODULE == null) {

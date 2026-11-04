@@ -311,12 +311,35 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
      * @param builder the {@link OpsBuilder}
      */
     public JavaInputAstVisitor(OpsBuilder builder, int indentMultiplier) {
+        this(builder, indentMultiplier, false);
+    }
+
+    /**
+     * Bowerbird: creates a visitor that applies the Bowerbird rules when {@code bowerbird} is true. With
+     * {@code false} it behaves exactly like upstream palantir-java-format.
+     */
+    public JavaInputAstVisitor(OpsBuilder builder, int indentMultiplier, boolean bowerbird) {
         this.builder = builder;
         this.indentMultiplier = indentMultiplier;
+        this.bowerbird = bowerbird;
         minusTwo = Indent.Const.make(-2, indentMultiplier);
-        minusFour = Indent.Const.make(-4, indentMultiplier);
         plusTwo = Indent.Const.make(+2, indentMultiplier);
-        plusFour = Indent.Const.make(+4, indentMultiplier);
+        // Bowerbird: continuation indent is one indent unit (4 spaces) instead of two (8 spaces).
+        minusFour = Indent.Const.make(bowerbird ? -2 : -4, indentMultiplier);
+        plusFour = Indent.Const.make(bowerbird ? +2 : +4, indentMultiplier);
+    }
+
+    /** Bowerbird: true when the Bowerbird rules apply. */
+    protected final boolean bowerbird;
+
+    /**
+     * Bowerbird: the space between a control keyword and its opening parenthesis. Bowerbird writes {@code if(x)};
+     * upstream writes {@code if (x)}.
+     */
+    protected final void spaceAfterControlKeyword() {
+        if (!bowerbird) {
+            builder.space();
+        }
     }
 
     /** A record of whether we have visited into an expression. */
@@ -758,7 +781,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             builder.breakOp(" ");
         }
         token("while");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         scan(skipParen(node.getCondition()), null);
         token(")");
@@ -778,7 +801,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         sync(node);
         builder.open(ZERO);
         token("for");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         builder.open(ZERO);
         visitToDeclare(
@@ -1001,7 +1024,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     public Void visitForLoop(ForLoopTree node, Void unused) {
         sync(node);
         token("for");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         builder.open(plusFour);
         builder.open(
@@ -1090,7 +1113,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 builder.space();
             }
             token("if");
-            builder.space();
+            spaceAfterControlKeyword();
             token("(");
             scan(skipParen(expressions.get(i)), null);
             token(")");
@@ -1864,7 +1887,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     protected void visitSwitch(ExpressionTree expression, List<? extends CaseTree> cases) {
         builder.open(ZERO);
         token("switch");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         scan(skipParen(expression), null);
         token(")");
@@ -1891,7 +1914,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     public Void visitSynchronized(SynchronizedTree node, Void unused) {
         sync(node);
         token("synchronized");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         builder.open(plusFour);
         builder.breakOp();
@@ -1918,7 +1941,11 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         sync(node);
         builder.open(ZERO);
         token("try");
-        builder.space();
+        if (node.getResources().isEmpty()) {
+            builder.space();
+        } else {
+            spaceAfterControlKeyword();
+        }
         if (!node.getResources().isEmpty()) {
             token("(");
             builder.open(node.getResources().size() > 1 ? plusFour : ZERO);
@@ -2065,7 +2092,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     public Void visitWhileLoop(WhileLoopTree node, Void unused) {
         sync(node);
         token("while");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         scan(skipParen(node.getCondition()), null);
         token(")");
@@ -2335,7 +2362,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         sync(node);
         builder.space();
         token("catch");
-        builder.space();
+        spaceAfterControlKeyword();
         token("(");
         builder.open(plusFour);
         VariableTree ex = node.getParameter();
