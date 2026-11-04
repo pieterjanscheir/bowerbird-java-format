@@ -92,6 +92,14 @@
             "com.palantir.javaformat.OpsBuilder",
             "int"
           ]
+        },
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.palantir.javaformat.OpsBuilder",
+            "int",
+            "boolean"
+          ]
         }
       ]
     },
@@ -103,6 +111,14 @@
           "parameterTypes": [
             "com.palantir.javaformat.OpsBuilder",
             "int"
+          ]
+        },
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.palantir.javaformat.OpsBuilder",
+            "int",
+            "boolean"
           ]
         }
       ]

@@ -138,7 +138,9 @@ public final class Formatter {
             visitor = createVisitor("com.palantir.javaformat.java.java14.Java14InputAstVisitor", opsBuilder, options);
         } else {
             visitor = new JavaInputAstVisitor(
-                    opsBuilder, options.indentationMultiplier(), options.style() == JavaFormatterOptions.Style.BOWERBIRD);
+                    opsBuilder,
+                    options.indentationMultiplier(),
+                    options.style() == JavaFormatterOptions.Style.BOWERBIRD);
         }
 
         visitor.scan(unit, null);
@@ -211,7 +213,10 @@ public final class Formatter {
             return Class.forName(className)
                     .asSubclass(JavaInputAstVisitor.class)
                     .getConstructor(OpsBuilder.class, int.class, boolean.class)
-                    .newInstance(builder, options.indentationMultiplier(), options.style() == JavaFormatterOptions.Style.BOWERBIRD);
+                    .newInstance(
+                            builder,
+                            options.indentationMultiplier(),
+                            options.style() == JavaFormatterOptions.Style.BOWERBIRD);
         } catch (ReflectiveOperationException e) {
             throw new LinkageError(e.getMessage());
         }

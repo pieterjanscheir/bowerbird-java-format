@@ -98,7 +98,9 @@ public final class JavaOutput extends Output {
              * there's a blank line here and it's a comment.
              */
             BlankLineWanted wanted = inputMetadata.blankLines().getOrDefault(lastK, BlankLineWanted.NO);
-            if ((isComment(text) && !bowerbird) ? sawNewlines : wanted.wanted(state).orElse(sawNewlines)) {
+            if ((isComment(text) && !bowerbird)
+                    ? sawNewlines
+                    : wanted.wanted(state).orElse(sawNewlines)) {
                 ++newlinesPending;
             }
         }
