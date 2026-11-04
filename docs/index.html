@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bowerbird Java Format</title>
+<meta name="description" content="Bowerbird is a Java formatter based on palantir-java-format, with IntelliJ-compatible formatting rules.">
+<style>
+:root {
+  --bg: #fbfaf7;
+  --surface: #ffffff;
+  --code-bg: #f3f1ec;
+  --text: #1f2328;
+  --muted: #5b6168;
+  --border: #e3dfd6;
+  --accent: #1d4ed8;
+  --accent-soft: #e6edff;
+  --before: #b42318;
+  --after: #067647;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317;
+    --surface: #171a1f;
+    --code-bg: #1d2127;
+    --text: #e6e8eb;
+    --muted: #9aa1aa;
+    --border: #2b3038;
+    --accent: #7ea6ff;
+    --accent-soft: #1c2740;
+    --before: #ff8a80;
+    --after: #6fd39a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111317;
+  --surface: #171a1f;
+  --code-bg: #1d2127;
+  --text: #e6e8eb;
+  --muted: #9aa1aa;
+  --border: #2b3038;
+  --accent: #7ea6ff;
+  --accent-soft: #1c2740;
+  --before: #ff8a80;
+  --after: #6fd39a;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 var(--sans);
+}
+a { color: var(--accent); }
+.layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  max-width: 1180px;
+  margin: 0 auto;
+  gap: 48px;
+  padding: 0 24px;
+}
+nav {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: 40px 0;
+  font-size: 14px;
+}
+nav .brand { font-weight: 700; font-size: 18px; margin-bottom: 4px; }
+nav .tag { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+nav ul { list-style: none; margin: 0 0 20px; padding: 0; }
+nav li a {
+  display: block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+nav li a:hover { background: var(--accent-soft); }
+nav .group { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 6px 10px; }
+main { padding: 40px 0 96px; min-width: 0; }
+header.hero { padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+header.hero h1 { font-size: 40px; line-height: 1.15; margin: 0 0 12px; letter-spacing: -.02em; }
+header.hero p.lede { font-size: 19px; color: var(--muted); margin: 0 0 20px; max-width: 46em; }
+.buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+h2 { font-size: 26px; margin: 56px 0 12px; letter-spacing: -.01em; }
+h3 { font-size: 19px; margin: 36px 0 8px; }
+p, li { max-width: 48em; }
+code { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font: 13px/1.55 var(--mono);
+  margin: 12px 0 20px;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0 20px; font-size: 14px; display: block; overflow-x: auto; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.callout {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  margin: 16px 0;
+  max-width: 48em;
+}
+.callout.warn { border-left-color: var(--before); }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 24px; }
+.compare > div { min-width: 0; }
+.compare pre { margin: 0; height: 100%; }
+.compare .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.compare .label.before { color: var(--before); }
+.compare .label.after { color: var(--after); }
+.rules { padding-left: 20px; }
+.rules li { margin-bottom: 4px; }
+footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 14px; }
+.theme-toggle {
+  margin-top: 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; gap: 0; padding: 0 16px; }
+  nav { position: static; max-height: none; padding: 24px 0 0; border-bottom: 1px solid var(--border); }
+  nav ul { display: flex; flex-wrap: wrap; gap: 2px; }
+  nav .group { width: 100%; }
+  main { padding-top: 24px; }
+  header.hero h1 { font-size: 32px; }
+  .compare { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav aria-label="Documentation">
+  <div class="brand">Bowerbird</div>
+  <div class="tag">Java formatter</div>
+  <div class="group">Start</div>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#install">Install</a></li>
+    <li><a href="#gradle">Gradle</a></li>
+    <li><a href="#intellij">IntelliJ</a></li>
+  </ul>
+  <div class="group">Style</div>
+  <ul>
+    <li><a href="#rules">Rule summary</a></li>
+    <li><a href="#control-keywords">Control keywords</a></li>
+    <li><a href="#imports">Imports</a></li>
+    <li><a href="#wrapping">Wrapping</a></li>
+    <li><a href="#arrays">Array initializers</a></li>
+    <li><a href="#blocks">Blocks and statements</a></li>
+    <li><a href="#blank-lines">Blank lines</a></li>
+    <li><a href="#javadoc">JavaDoc</a></li>
+  </ul>
+  <div class="group">Develop</div>
+  <ul>
+    <li><a href="#building">Building</a></li>
+    <li><a href="#adding-rules">Adding a rule</a></li>
+    <li><a href="#upstream">Upstream sync</a></li>
+    <li><a href="#releasing">Releasing</a></li>
+  </ul>
+  <button class="theme-toggle" type="button" id="theme-toggle">Toggle theme</button>
+</nav>
+
+<main>
+<header class="hero" id="overview">
+  <h1>Bowerbird Java Format</h1>
+  <p class="lede">A Java formatter that arranges your code the way a bowerbird arranges its nest: carefully, and always the same way.</p>
+  <div class="buttons">
+    <a class="btn primary" href="#install">Get started</a>
+    <a class="btn" href="https://github.com/pieterjanscheir/bowerbird-java-format">GitHub</a>
+    <a class="btn" href="https://github.com/pieterjanscheir/bowerbird-java-format/releases">Releases</a>
+  </div>
+</header>
+
+<p>Bowerbird is a modified version of <a href="https://github.com/palantir/palantir-java-format">palantir-java-format</a>, which is itself based on <a href="https://github.com/google/google-java-format">google-java-format</a>. It adds a <code>BOWERBIRD</code> style whose output matches IntelliJ IDEA's formatter for the target code style, so code formatted by Bowerbird stays unchanged when someone presses <em>Reformat Code</em> in the IDE.</p>
+<p>Bowerbird is available under the <a href="https://github.com/pieterjanscheir/bowerbird-java-format/blob/main/LICENSE">Apache 2.0 License</a>, the same licence as upstream. See <a href="https://github.com/pieterjanscheir/bowerbird-java-format/blob/main/NOTICE">NOTICE</a> for attribution.</p>
+
+<h2 id="install">Install</h2>
+<p>Bowerbird is published to GitHub Packages under these coordinates:</p>
+<table>
+  <thead><tr><th>Artifact</th><th>Coordinates</th></tr></thead>
+  <tbody>
+    <tr><td>Formatter</td><td><code>io.github.pieterjanscheir.bowerbird:bowerbird-java-format</code></td></tr>
+    <tr><td>SPI</td><td><code>io.github.pieterjanscheir.bowerbird:bowerbird-java-format-spi</code></td></tr>
+    <tr><td>JDK bootstrap</td><td><code>io.github.pieterjanscheir.bowerbird:bowerbird-java-format-jdk-bootstrap</code></td></tr>
+  </tbody>
+</table>
+<p>GitHub Packages needs authentication, even for public packages. Create a <a href="https://github.com/settings/tokens">personal access token (classic)</a> with the <code>read:packages</code> scope and add the repository to your build:</p>
+<pre><code>repositories {
+    mavenCentral()
+    maven {
+        url = 'https://maven.pkg.github.com/pieterjanscheir/bowerbird-java-format'
+        credentials {
+            username = providers.gradleProperty('gpr.user').orElse(providers.environmentVariable('GITHUB_ACTOR')).get()
+            password = providers.gradleProperty('gpr.key').orElse(providers.environmentVariable('GITHUB_TOKEN')).get()
+        }
+    }
+}</code></pre>
+<p>Put <code>gpr.user</code> and <code>gpr.key</code> in <code>~/.gradle/gradle.properties</code> locally. In GitHub Actions, the built-in <code>GITHUB_TOKEN</code> works when the job has <code>packages: read</code> permission.</p>
+<p>Every release also attaches the jars to its <a href="https://github.com/pieterjanscheir/bowerbird-java-format/releases">GitHub Release</a>, if you prefer to download them.</p>
+
+<h2 id="gradle">Using it with Gradle</h2>
+<p>Module folders and Java packages (<code>com.palantir.javaformat</code>) are deliberately unchanged, so the upstream Gradle plugin can load Bowerbird. Apply the plugin and point it at Bowerbird instead of the default formatter:</p>
+<pre><code>plugins {
+    id 'com.palantir.java-format' version '&lt;upstream version Bowerbird is based on&gt;'
+}
+
+dependencies {
+    palantirJavaFormat 'io.github.pieterjanscheir.bowerbird:bowerbird-java-format:&lt;bowerbird version&gt;'
+}</code></pre>
+<p>The plugin configures IntelliJ to use that formatter. For a command-line <code>./gradlew format</code> task, add the <a href="https://github.com/palantir/gradle-baseline#compalantirbaseline-format">com.palantir.baseline-format</a> plugin. With <a href="https://github.com/diffplug/spotless/tree/main/plugin-gradle#palantir-java-format">Spotless</a>, configure <code>palantirJavaFormat()</code> to use Bowerbird's artifact and run <code>./gradlew spotlessApply</code>.</p>
+<div class="callout warn"><strong>Do not enable the native formatter</strong> (<code>palantir.native.formatter</code>). It downloads Palantir's precompiled binary, which does not contain Bowerbird's rules.</div>
+
+<h2 id="intellij">Using it in IntelliJ IDEA</h2>
+<p>Install the upstream <a href="https://plugins.jetbrains.com/plugin/13180-palantir-java-format">palantir-java-format IntelliJ plugin</a>. It uses the formatter version that the Gradle plugin resolves for your project, so once the <code>palantirJavaFormat</code> dependency points at Bowerbird, import the project in IntelliJ or run:</p>
+<pre><code>./gradlew idea</code></pre>
+<p>Make sure the plugin is enabled under <em>Settings → palantir-java-format Settings</em>. <em>Reformat Code</em> then formats with Bowerbird.</p>
+
+<h2 id="rules">Formatting rules</h2>
+<p>The <code>BOWERBIRD</code> style is the default style used by <code>FormatterServiceImpl</code>, so the Gradle and IntelliJ plugins pick it up without extra settings. Upstream's <code>PALANTIR</code>, <code>GOOGLE</code> and <code>AOSP</code> styles are unchanged. Bowerbird keeps upstream's 120-character line length and 4-space indent, and changes the following:</p>
+<ul class="rules">
+  <li>No space between a control keyword and <code>(</code>: <code>if(</code>, <code>for(</code>, <code>while(</code>, <code>switch(</code>, <code>try(</code>, <code>catch(</code>, <code>synchronized(</code>.</li>
+  <li>Imports in groups: static, <code>java</code>, <code>javax</code>, <code>org</code>, <code>com</code>, everything else, with a blank line between groups.</li>
+  <li>Continuation indent of 4 spaces instead of 8.</li>
+  <li><code>)</code> on its own line when parameters or call arguments wrap one per line.</li>
+  <li>A space inside array initializer braces: <code>{ 1, 2, 3 }</code>.</li>
+  <li>The body of an <code>if</code>, <code>for</code> or <code>while</code> without braces always goes on its own line; one-line blocks are expanded.</li>
+  <li>Try with several resources: one resource per line.</li>
+  <li>Blank lines inside code are removed; class bodies get one blank line after the header and before the closing brace, one around methods and none between fields.</li>
+  <li>JavaDoc tag blocks are separated by blank lines, tag names get a single space after them, and JavaDoc is never wrapped.</li>
+</ul>
+
+<h3 id="control-keywords">Control keywords</h3>
+<div class="compare">
+<div><div class="label before">Before</div><pre><code>if (values.length &gt; 0) {
+    return;
+} else if (values.length &lt; 0) {
+    throw new IllegalStateException();
+}
+for (int value : values) {
+    run(value);
+}
+try (AutoCloseable resource = open()) {
+    run(resource);
+} catch (IllegalStateException e) {
+    throw e;
+}</code></pre></div>
+<div><div class="label after">After</div><pre><code>if(values.length &gt; 0) {
+    return;
+} else if(values.length &lt; 0) {
+    throw new IllegalStateException();
+}
+for(int value : values) {
+    run(value);
+}
+try(AutoCloseable resource = open()) {
+    run(resource);
+} catch(IllegalStateException e) {
+    throw e;
+}</code></pre></div>
+</div>
+
+<h3 id="imports">Imports</h3>
+<div class="compare">
+<div><div class="label before">Before</div><pre><code>import net.other.Thing;
+import com.example.trading.Order;
+import java.util.List;
+import static java.util.Objects.requireNonNull;
+import org.slf4j.Logger;
+import javax.annotation.Nullable;
+import java.util.Map;
+import static org.assertj.core.api.Assertions.assertThat;
+import com.google.common.collect.ImmutableList;</code></pre></div>
+<div><div class="label after">After</div><pre><code>import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+
+import com.example.trading.Order;
+import com.google.common.collect.ImmutableList;
+
+import net.other.Thing;</code></pre></div>
+</div>
+
+<h3 id="wrapping">Wrapping</h3>
+<p>Continuation lines are indented by 4 spaces. When arguments are split one per line, the closing parenthesis goes on its own line. Method chains break before each <code>.</code>.</p>
+<pre><code>OrderResult result = orderService.placeOrderWithAVeryLongName(
+    firstAccountArgument, secondInstrumentArgument, thirdQuantityArgument, fourth);
+
+service.submit(
+    builder.withAccount(firstAccountArgument)
+        .withInstrument(secondInstrumentArgument)
+        .build(),
+    options,
+    callback
+);
+
+executor.execute(
+    account,
+    () -&gt; {
+        run();
+        run();
+    }
+);
+
+List&lt;String&gt; symbols = orders.stream()
+    .filter(order -&gt; order.isOpen() &amp;&amp; order.quantity() &gt; minimumQuantity)
+    .map(Order::symbol)
+    .toList();</code></pre>
+
+<h3 id="arrays">Array initializers</h3>
+<div class="compare">
+<div><div class="label before">Before</div><pre><code>int[] numbers = new int[]{1, 2, 3};
+String[] names = {"a", "b"};
+int[] empty = {};
+
+@SuppressWarnings({"unchecked", "rawtypes"})</code></pre></div>
+<div><div class="label after">After</div><pre><code>int[] numbers = new int[] { 1, 2, 3 };
+String[] names = { "a", "b" };
+int[] empty = {};
+
+@SuppressWarnings({ "unchecked", "rawtypes" })</code></pre></div>
+</div>
+
+<h3 id="blocks">Blocks and statements</h3>
+<div class="compare">
+<div><div class="label before">Before</div><pre><code>public String name() { return "order"; }
+
+void check(int x) {
+    if (x &gt; 0) return;
+    if (x &lt; 0) { x = 0; }
+    Runnable r = () -&gt; { run(); };
+    Object o = new Object() { };
+}</code></pre></div>
+<div><div class="label after">After</div><pre><code>public String name() {
+    return "order";
+}
+
+void check(int x) {
+    if(x &gt; 0)
+        return;
+    if(x &lt; 0) {
+        x = 0;
+    }
+    Runnable r = () -&gt; {
+        run();
+    };
+    Object o = new Object() {};
+}</code></pre></div>
+</div>
+<p>Empty bodies such as <code>void empty() {}</code> and <code>static class Empty {}</code> stay on one line.</p>
+
+<h3 id="blank-lines">Blank lines</h3>
+<p>Blank lines typed inside methods are removed, including before comments. Classes, interfaces and nested classes get one blank line after the header and before the closing brace. Fields have no blank lines between them, also when they have JavaDoc; methods, constructors, nested types and initializers get one around them. Interface methods have none. Enums have no blank line after the header or before the closing brace.</p>
+<div class="compare">
+<div><div class="label before">Before</div><pre><code>class BlankLines {
+    private int first;
+
+
+    /** The second field. */
+    private int second;
+    BlankLines() {}
+    void run() {
+
+        int a = 1;
+
+        // explains b
+        int b = 2;
+
+    }
+}</code></pre></div>
+<div><div class="label after">After</div><pre><code>class BlankLines {
+
+    private int first;
+    /** The second field. */
+    private int second;
+
+    BlankLines() {}
+
+    void run() {
+        int a = 1;
+        // explains b
+        int b = 2;
+    }
+
+}</code></pre></div>
+</div>
+
+<h3 id="javadoc">JavaDoc</h3>
+<p>Blank lines inside the description are removed. One blank line follows the description, the <code>@param</code> block and <code>@return</code>. Parameter and exception names are followed by a single space. JavaDoc is never re-wrapped, so long lines stay as written.</p>
+<div class="compare">
+<div><div class="label before">Before</div><pre><code>/**
+ * Places an order on the exchange.
+ *
+ * Second paragraph of the description.
+ * @param account   the client account
+ * @param order the order to place
+ * @return the placement result
+ * @throws IllegalStateException when refused
+ * @throws IllegalArgumentException   when invalid
+ */</code></pre></div>
+<div><div class="label after">After</div><pre><code>/**
+ * Places an order on the exchange.
+ * Second paragraph of the description.
+ *
+ * @param account the client account
+ * @param order the order to place
+ *
+ * @return the placement result
+ *
+ * @throws IllegalStateException when refused
+ * @throws IllegalArgumentException when invalid
+ */</code></pre></div>
+</div>
+
+<h2 id="building">Building</h2>
+<p>You need JDK 21. The Gradle wrapper downloads everything else.</p>
+<pre><code>./gradlew :palantir-java-format:test</code></pre>
+<p>To try a local build in another project, publish it to Maven Local and add <code>mavenLocal()</code> to that project's repositories:</p>
+<pre><code>./gradlew :palantir-java-format-spi:publishToMavenLocal \
+    :palantir-java-format-jdk-bootstrap:publishToMavenLocal \
+    :palantir-java-format:publishToMavenLocal</code></pre>
+<p>CI runs <code>./gradlew build</code>, which also runs Error Prone and the project's own format check, and fails when the build changes tracked files.</p>
+
+<h2 id="adding-rules">Adding a formatting rule</h2>
+<ol>
+  <li>Add a <code>YourRule.input</code> and <code>YourRule.output</code> pair to <code>palantir-java-format/src/test/resources/com/palantir/javaformat/java/bowerbird-testdata/</code>. <code>BowerbirdIntegrationTest</code> picks them up.</li>
+  <li>Change the formatter, usually in <code>JavaInputAstVisitor.java</code>, and only for <code>Style.BOWERBIRD</code> so upstream styles and tests keep passing.</li>
+  <li>Run the tests. <code>./gradlew test -Drecreate=true</code> regenerates the expected outputs, so review that diff carefully.</li>
+  <li>Check the output against IntelliJ's formatter with the target code style: IntelliJ should leave Bowerbird's output unchanged.</li>
+</ol>
+<p>Keep one rule per commit, so upstream merge conflicts are easy to trace.</p>
+
+<h2 id="upstream">Staying up to date with upstream</h2>
+<p>A weekly workflow opens a pull request when palantir-java-format publishes a new release, or an issue when the merge conflicts. You can also run it by hand from the Actions tab for a specific upstream tag or branch. To merge by hand:</p>
+<pre><code>git fetch upstream
+git merge upstream/develop</code></pre>
+<p><code>README.md</code> conflicts on every upstream change to it: keep Bowerbird's version and apply upstream's changes to <a href="https://github.com/pieterjanscheir/bowerbird-java-format/blob/main/docs/upstream-README.md"><code>docs/upstream-README.md</code></a> if they matter.</p>
+
+<h2 id="releasing">Releasing</h2>
+<p>Push a version tag to build, test and publish that version. The version is taken from the tag.</p>
+<pre><code>git tag 1.0.0
+git push origin 1.0.0</code></pre>
+<p>The release workflow publishes the formatter, SPI and JDK bootstrap to GitHub Packages and creates a GitHub Release with the jars and generated release notes.</p>
+
+<footer>
+  Bowerbird is a fork of palantir-java-format and google-java-format, under the Apache 2.0 License.
+  This page is built from <a href="https://github.com/pieterjanscheir/bowerbird-java-format/blob/main/docs/index.html"><code>docs/index.html</code></a>.
+</footer>
+</main>
+</div>
+<script>
+(function () {
+  var root = document.documentElement;
+  try {
+    var saved = localStorage.getItem('theme');
+    if (saved) root.setAttribute('data-theme', saved);
+  } catch (e) {}
+  document.getElementById('theme-toggle').addEventListener('click', function () {
+    var current = root.getAttribute('data-theme')
+      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = current === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('theme', next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>

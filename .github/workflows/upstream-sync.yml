@@ -1,0 +1,45 @@
+name: Upstream sync
+
+# Opens a pull request when palantir-java-format publishes a new release, or an issue when merging it conflicts.
+on:
+  schedule:
+    - cron: "23 6 * * 1" # weekly, Monday morning
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Upstream tag or branch to merge (empty = latest release)
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-sync
+
+jobs:
+  sync:
+    name: Merge latest upstream release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # push the sync branch
+      pull-requests: write # open the pull request
+      issues: write # report conflicts
+      actions: write # start CI on the sync branch
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge upstream and open a pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM_REF: ${{ inputs.ref }}
+        run: .github/scripts/upstream-sync.sh "$UPSTREAM_REF"

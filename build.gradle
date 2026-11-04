@@ -68,6 +68,22 @@ subprojects { p ->
                 artifactId = bowerbirdArtifactIds[p.name]
             }
         }
+        if (bowerbirdArtifactIds.containsKey(p.name)) {
+            // Bowerbird: released to GitHub Packages by .github/workflows/release.yml.
+            // BOWERBIRD_MAVEN_URL overrides the target, for example with a file:// URL to test publishing locally.
+            p.publishing.repositories {
+                maven {
+                    name = 'GitHubPackages'
+                    url = System.env.BOWERBIRD_MAVEN_URL ?: 'https://maven.pkg.github.com/pieterjanscheir/bowerbird-java-format'
+                    if (!System.env.BOWERBIRD_MAVEN_URL) {
+                        credentials {
+                            username = System.env.GITHUB_ACTOR
+                            password = System.env.GITHUB_TOKEN
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
