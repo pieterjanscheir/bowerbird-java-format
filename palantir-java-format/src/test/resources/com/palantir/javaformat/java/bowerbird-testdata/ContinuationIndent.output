@@ -8,7 +8,8 @@ class ContinuationIndent {
         String instrument,
         int quantity,
         double limitPrice,
-        String timeInForce) {
+        String timeInForce
+    ) {
         OrderResult result =
             orderService.place(account, instrument, quantity, limitPrice, timeInForce, "some-long-reference");
         String symbols = orders.stream()

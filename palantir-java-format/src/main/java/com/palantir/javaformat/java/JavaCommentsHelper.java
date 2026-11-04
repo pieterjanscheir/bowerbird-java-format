@@ -34,11 +34,14 @@ public final class JavaCommentsHelper implements CommentsHelper {
 
     @Nullable
     private final JavadocFormatter javadocFormatter;
+    /** Bowerbird: true when JavaDoc blocks get the Bowerbird layout, see {@link BowerbirdJavadoc}. */
+    private final boolean bowerbird;
 
     public JavaCommentsHelper(String lineSeparator, JavaFormatterOptions options) {
         this.lineSeparator = lineSeparator;
         this.options = options;
         this.javadocFormatter = options.formatJavadoc() ? new JavadocFormatter(options.maxLineLength()) : null;
+        this.bowerbird = options.style() == JavaFormatterOptions.Style.BOWERBIRD;
     }
 
     @Override
@@ -49,6 +52,9 @@ public final class JavaCommentsHelper implements CommentsHelper {
         String text = tok.getOriginalText();
         if (javadocFormatter != null && tok.isJavadocComment()) {
             text = javadocFormatter.formatJavadoc(text, column0);
+        }
+        if (bowerbird && tok.isJavadocComment()) {
+            text = BowerbirdJavadoc.format(text, lineSeparator);
         }
         List<String> lines = new ArrayList<>();
         Iterator<String> it = Newlines.lineIterator(text);

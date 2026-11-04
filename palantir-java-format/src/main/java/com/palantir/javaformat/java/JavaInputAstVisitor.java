@@ -340,6 +340,16 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         return bowerbird ? BlankLineWanted.NO : BlankLineWanted.PRESERVE;
     }
 
+    /**
+     * Bowerbird: a break before a closing parenthesis, placing it on its own line, aligned with the start of the
+     * construct, whenever the enclosing level breaks.
+     */
+    protected final void closingParenBreak() {
+        if (bowerbird) {
+            builder.breakOp(FillMode.UNIFIED, "", minusFour);
+        }
+    }
+
     /** Bowerbird: one blank line after a class header and before a class's closing brace. */
     protected final BlankLineWanted classBodyEdgeBlankLine(BlankLineWanted upstream) {
         return bowerbird ? BlankLineWanted.YES : upstream;
@@ -748,7 +758,8 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         addArguments(node.getArguments(), plusFour);
         builder.close();
         if (node.getClassBody() != null) {
-            addBodyDeclarations(node.getClassBody().getMembers(), BracesOrNot.YES, FirstDeclarationsOrNot.YES);
+            addBodyDeclarations(
+                    node.getClassBody().getMembers(), BracesOrNot.YES, FirstDeclarationsOrNot.YES, Anonymous.YES);
         }
         return null;
     }
@@ -848,7 +859,8 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             addArguments(init.getArguments(), plusFour);
         }
         if (init.getClassBody() != null) {
-            addBodyDeclarations(init.getClassBody().getMembers(), BracesOrNot.YES, FirstDeclarationsOrNot.YES);
+            addBodyDeclarations(
+                    init.getClassBody().getMembers(), BracesOrNot.YES, FirstDeclarationsOrNot.YES, Anonymous.YES);
         }
     }
 
@@ -918,7 +930,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             }
         } else {
             builder.open(plusTwo);
-            builder.blankLineWanted(classBodyEdgeBlankLine(BlankLineWanted.NO));
+            builder.blankLineWanted(BlankLineWanted.NO);
             builder.forcedBreak();
             builder.open(ZERO);
             boolean first = true;
@@ -948,7 +960,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             builder.open(ZERO);
             addBodyDeclarations(members, BracesOrNot.NO, FirstDeclarationsOrNot.NO);
             builder.forcedBreak();
-            builder.blankLineWanted(classBodyEdgeBlankLine(BlankLineWanted.NO));
+            builder.blankLineWanted(BlankLineWanted.NO);
             token("}", plusTwo);
             builder.close();
         }
@@ -1353,6 +1365,8 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 }
                 first = false;
             }
+            // Bowerbird: ')' on its own line when the arguments are wrapped.
+            closingParenBreak();
             token(")");
             builder.close();
             builder.close();
@@ -1964,6 +1978,11 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         if (!node.getResources().isEmpty()) {
             token("(");
             builder.open(node.getResources().size() > 1 ? plusFour : ZERO);
+            boolean resourcesOnOwnLines = bowerbird && node.getResources().size() > 1;
+            if (resourcesOnOwnLines) {
+                // Bowerbird: several resources go one per line between '(' and ')' on their own lines.
+                builder.forcedBreak();
+            }
             boolean first = true;
             for (Tree resource : node.getResources()) {
                 if (!first) {
@@ -1996,6 +2015,9 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             if (builder.peekToken().equals(Optional.of(";"))) {
                 token(";");
                 builder.space();
+            }
+            if (resourcesOnOwnLines) {
+                builder.breakOp(FillMode.FORCED, "", minusFour);
             }
             token(")");
             builder.close();
@@ -2212,7 +2234,12 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 break;
             default:
                 builder.open(plusTwo);
-                builder.breakOp(" ");
+                if (bowerbird) {
+                    // Bowerbird: a body without braces always goes on its own line: if(x)\n    return;
+                    builder.forcedBreak();
+                } else {
+                    builder.breakOp(" ");
+                }
                 scan(node, null);
                 builder.close();
         }
@@ -2506,6 +2533,10 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 builder.blankLineWanted(BlankLineWanted.conditional(declarationAnnotationBreak));
             }
             first = false;
+        }
+        if (!isRecordParams) {
+            // Bowerbird: ')' on its own line when the parameters wrap. Record headers do this one level up.
+            closingParenBreak();
         }
         builder.close();
     }
@@ -3244,6 +3275,10 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                     builder.close();
                     first = false;
                 }
+                if (bowerbird) {
+                    // Bowerbird: tabular arguments always span lines, so ')' goes on its own line.
+                    builder.breakOp(FillMode.FORCED, "", minusFour);
+                }
                 builder.close();
             } else if (isFormatMethod(arguments)) {
                 builder.breakOp();
@@ -3257,7 +3292,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 builder.close();
             } else {
                 builder.breakOp();
-                argList(arguments);
+                argList(arguments, /* closingParenOnOwnLine= */ true);
             }
         }
         token(")");
@@ -3265,6 +3300,11 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     }
 
     private void argList(List<? extends ExpressionTree> arguments) {
+        argList(arguments, false);
+    }
+
+    /** Bowerbird: with {@code closingParenOnOwnLine}, ')' goes on its own line when the arguments wrap. */
+    private void argList(List<? extends ExpressionTree> arguments, boolean closingParenOnOwnLine) {
         builder.open(OpenOp.builder()
                 .debugName("argList")
                 .plusIndent(ZERO)
@@ -3281,6 +3321,9 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             }
             scan(argument, null);
             first = false;
+        }
+        if (closingParenOnOwnLine) {
+            closingParenBreak();
         }
         builder.close();
     }
@@ -3781,6 +3824,20 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     @SuppressWarnings("for-rollout:NullAway")
     protected void addBodyDeclarations(
             List<? extends Tree> bodyDeclarations, BracesOrNot braces, FirstDeclarationsOrNot first0) {
+        addBodyDeclarations(bodyDeclarations, braces, first0, Anonymous.NO);
+    }
+
+    /** Bowerbird: whether a class body belongs to an anonymous class (or an enum constant's body). */
+    protected enum Anonymous {
+        YES,
+        NO
+    }
+
+    protected void addBodyDeclarations(
+            List<? extends Tree> bodyDeclarations,
+            BracesOrNot braces,
+            FirstDeclarationsOrNot first0,
+            Anonymous anonymous) {
         if (bodyDeclarations.isEmpty()) {
             if (braces.isYes()) {
                 builder.space();
@@ -3841,7 +3898,9 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             builder.forcedBreak();
             markForPartialFormat();
             if (braces.isYes()) {
-                builder.blankLineWanted(classBodyEdgeBlankLine(BlankLineWanted.NO));
+                // Bowerbird: anonymous classes get no blank line before their closing brace.
+                builder.blankLineWanted(
+                        anonymous == Anonymous.YES ? BlankLineWanted.NO : classBodyEdgeBlankLine(BlankLineWanted.NO));
                 token("}", plusTwo);
                 builder.close();
             }

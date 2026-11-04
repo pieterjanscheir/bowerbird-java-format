@@ -1,0 +1,38 @@
+package example;
+
+import java.util.List;
+
+class WrappingCalls {
+
+    void run() {
+        OrderResult result = orderService.placeOrderWithAVeryLongName(
+            firstAccountArgument, secondInstrumentArgument, thirdQuantityArgument, fourth);
+        Order order =
+            new Order(firstAccountArgument, secondInstrumentArgument, thirdQuantityArgument, fourthLimitPrice, fifth);
+        service.submit(
+            builder.withAccount(firstAccountArgument)
+                .withInstrument(secondInstrumentArgument)
+                .build(),
+            options,
+            callback
+        );
+        executor.execute(
+            account,
+            () -> {
+                run();
+                run();
+            }
+        );
+        List<String> symbols = orders.stream()
+            .filter(order -> order.isOpen() && order.quantity() > minimumQuantity)
+            .map(Order::symbol)
+            .toList();
+        String message = String.format(
+            "Order %s for account %s was rejected because %s", orderIdentifier, accountIdentifier, reason);
+        log.info("short");
+        assertThat(result)
+            .isEqualTo(expectedResultWithAVeryLongVariableName)
+            .describedAs("result for %s", firstAccountArgument);
+    }
+
+}

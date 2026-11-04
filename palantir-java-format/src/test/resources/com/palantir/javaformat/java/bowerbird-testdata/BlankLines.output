@@ -25,7 +25,6 @@ class BlankLines {
 
             @Override
             public void run() {}
-
         };
     }
 
@@ -46,7 +45,6 @@ interface Repository {
 }
 
 enum Side {
-
     BUY,
     SELL;
     private int code;
@@ -54,5 +52,4 @@ enum Side {
     int code() {
         return code;
     }
-
 }
