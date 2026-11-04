@@ -19,4 +19,5 @@ class ContinuationIndent {
         boolean valid =
             quantity > 0 && limitPrice != null && account != null && instrument != null && timeInForce != null;
     }
+
 }

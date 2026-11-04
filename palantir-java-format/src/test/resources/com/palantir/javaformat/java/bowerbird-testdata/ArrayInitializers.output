@@ -1,0 +1,15 @@
+package example;
+
+class ArrayInitializers {
+
+    int[] numbers = new int[] { 1, 2, 3 };
+    String[] names = { "a", "b" };
+    int[] empty = {};
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    void run() {
+        String[] longNames =
+            new String[] { "first-long-name", "second-long-name", "third-long-name", "fourth-long-name", "fifth" };
+    }
+
+}

@@ -155,7 +155,8 @@ public final class Formatter {
         State finalState =
                 doc.computeBreaks(commentsHelper, options.maxLineLength(), State.startingState(), observationNode);
 
-        JavaOutput javaOutput = new JavaOutput(javaInput, opsOutput.inputMetadata());
+        JavaOutput javaOutput = new JavaOutput(
+                javaInput, opsOutput.inputMetadata(), options.style() == JavaFormatterOptions.Style.BOWERBIRD);
         doc.write(finalState, javaOutput);
         javaOutput.flush();
 
