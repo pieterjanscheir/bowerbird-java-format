@@ -19,13 +19,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.ImmutableMap;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -117,24 +124,82 @@ public final class BowerbirdConfig {
      * @throws BowerbirdConfigException when the file can't be read, is invalid, or is on the classpath twice
      */
     public static BowerbirdRules load(ClassLoader classLoader) {
-        List<URL> files;
+        // Keyed by location, so the same file found as a resource and as an entry counts once.
+        Map<String, URL> files = new LinkedHashMap<>();
         try {
-            files = Collections.list(classLoader.getResources(FILE_NAME));
+            for (URL url : Collections.list(classLoader.getResources(FILE_NAME))) {
+                files.putIfAbsent(location(url), url);
+            }
         } catch (IOException e) {
             throw new BowerbirdConfigException("Could not look up " + FILE_NAME + " on the formatter classpath", e);
         }
+        classpathEntries(classLoader).forEach(files::putIfAbsent);
         if (files.isEmpty()) {
             return BowerbirdRules.defaults();
         }
         if (files.size() > 1) {
-            throw new BowerbirdConfigException(
-                    "Found " + FILE_NAME + " more than once on the formatter classpath, keep only one: " + files);
+            throw new BowerbirdConfigException("Found " + FILE_NAME
+                    + " more than once on the formatter classpath, keep only one: " + files.keySet());
         }
-        URL file = files.get(0);
+        URL file = files.values().iterator().next();
         try (InputStream in = file.openStream()) {
-            return parse(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8), file.toString());
+            return parse(new String(in.readAllBytes(), StandardCharsets.UTF_8), file.toString());
         } catch (IOException e) {
             throw new BowerbirdConfigException("Could not read " + file, e);
+        }
+    }
+
+    /**
+     * Classpath entries that are a {@value #FILE_NAME} file themselves, as in
+     * {@code palantirJavaFormat files('bowerbird.yml')}. A class loader only reads folders and jars, so these are found
+     * in the entries: the {@link URLClassLoader} URLs (the Gradle plugin and Spotless) and {@code java.class.path}
+     * (the separate JVM the IntelliJ plugin starts).
+     */
+    private static Map<String, URL> classpathEntries(ClassLoader classLoader) {
+        Map<String, URL> result = new LinkedHashMap<>();
+        for (ClassLoader loader = classLoader; loader != null; loader = loader.getParent()) {
+            if (loader instanceof URLClassLoader) {
+                for (URL url : ((URLClassLoader) loader).getURLs()) {
+                    if ("file".equals(url.getProtocol())) {
+                        try {
+                            addIfSettingsFile(result, Paths.get(url.toURI()));
+                        } catch (URISyntaxException | IllegalArgumentException e) {
+                            // not a local file path; a class loader can't use it either
+                        }
+                    }
+                }
+            }
+        }
+        String classPath = System.getProperty("java.class.path", "");
+        for (String entry : classPath.split(File.pathSeparator, -1)) {
+            if (!entry.isEmpty()) {
+                addIfSettingsFile(result, Paths.get(entry));
+            }
+        }
+        return result;
+    }
+
+    /** A local file's normalized path, or the URL itself for a file inside a jar. */
+    private static String location(URL url) {
+        if ("file".equals(url.getProtocol())) {
+            try {
+                return Paths.get(url.toURI()).toAbsolutePath().normalize().toString();
+            } catch (URISyntaxException | IllegalArgumentException e) {
+                // fall through
+            }
+        }
+        return url.toExternalForm();
+    }
+
+    private static void addIfSettingsFile(Map<String, URL> result, Path path) {
+        Path name = path.getFileName();
+        if (name != null && name.toString().equals(FILE_NAME) && Files.isRegularFile(path)) {
+            Path normalized = path.toAbsolutePath().normalize();
+            try {
+                result.putIfAbsent(normalized.toString(), normalized.toUri().toURL());
+            } catch (MalformedURLException e) {
+                throw new BowerbirdConfigException("Could not read " + path, e);
+            }
         }
     }
 
@@ -142,7 +207,7 @@ public final class BowerbirdConfig {
     public static BowerbirdRules load(Path file) {
         String text;
         try {
-            text = Files.readString(file, java.nio.charset.StandardCharsets.UTF_8);
+            text = Files.readString(file, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new BowerbirdConfigException("Could not read " + file, e);
         }

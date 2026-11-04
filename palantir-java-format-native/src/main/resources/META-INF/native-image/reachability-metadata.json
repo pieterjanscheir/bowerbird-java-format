@@ -92,6 +92,14 @@
             "com.palantir.javaformat.OpsBuilder",
             "int"
           ]
+        },
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.palantir.javaformat.OpsBuilder",
+            "int",
+            "com.palantir.javaformat.java.BowerbirdRules"
+          ]
         }
       ]
     },
@@ -103,6 +111,14 @@
           "parameterTypes": [
             "com.palantir.javaformat.OpsBuilder",
             "int"
+          ]
+        },
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.palantir.javaformat.OpsBuilder",
+            "int",
+            "com.palantir.javaformat.java.BowerbirdRules"
           ]
         }
       ]
@@ -181,6 +197,9 @@
     {
       "module": "jdk.compiler",
       "glob": "com/sun/tools/javac/resources/**"
+    },
+    {
+      "glob": "bowerbird.yml"
     }
   ],
   "bundles": [

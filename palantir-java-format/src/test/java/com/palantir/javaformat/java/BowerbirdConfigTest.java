@@ -204,6 +204,28 @@ class BowerbirdConfigTest {
     }
 
     @Test
+    void loads_the_file_when_it_is_a_classpath_entry_itself() throws IOException {
+        // palantirJavaFormat files('config/bowerbird.yml'): the file, not its folder, is on the classpath.
+        Path file = Files.createDirectory(tempDir.resolve("config")).resolve(BowerbirdConfig.FILE_NAME);
+        Files.writeString(file, "indent: 2\n", StandardCharsets.UTF_8);
+
+        try (URLClassLoader classLoader = classLoader(file)) {
+            assertThat(BowerbirdConfig.load(classLoader).indent()).isEqualTo(2);
+        }
+    }
+
+    @Test
+    void the_same_file_as_entry_and_in_a_folder_counts_once() throws IOException {
+        Path folder = Files.createDirectory(tempDir.resolve("both"));
+        Path file = folder.resolve(BowerbirdConfig.FILE_NAME);
+        Files.writeString(file, "indent: 2\n", StandardCharsets.UTF_8);
+
+        try (URLClassLoader classLoader = classLoader(folder, file)) {
+            assertThat(BowerbirdConfig.load(classLoader).indent()).isEqualTo(2);
+        }
+    }
+
+    @Test
     void no_file_on_the_classpath_gives_defaults() throws IOException {
         try (URLClassLoader classLoader = classLoader(Files.createDirectory(tempDir.resolve("empty")))) {
             assertThat(BowerbirdConfig.load(classLoader)).isEqualTo(BowerbirdRules.defaults());

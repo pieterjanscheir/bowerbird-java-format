@@ -116,6 +116,7 @@ pre {
   margin: 12px 0 20px;
 }
 pre code { background: none; padding: 0; font-size: inherit; }
+:not(pre) > code { overflow-wrap: anywhere; }
 table { border-collapse: collapse; width: 100%; margin: 12px 0 20px; font-size: 14px; display: block; overflow-x: auto; }
 th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
 th { color: var(--muted); font-weight: 600; }
@@ -148,6 +149,17 @@ footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--border
   padding: 4px 10px;
   cursor: pointer;
 }
+.compare.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.compare .label.yaml { font-family: var(--mono); text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--accent); font-size: 12px; }
+.rule { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 28px; }
+.rule h4 { font-size: 17px; margin: 8px 0 6px; }
+.rule h4 code { font-size: 1em; background: none; padding: 0; }
+table.rule-facts { width: auto; margin: 8px 0 12px; }
+table.rule-facts th { white-space: nowrap; padding-right: 16px; }
+p.note { color: var(--muted); font-size: 14px; }
+details { margin: 8px 0; }
+details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+@media (max-width: 900px) { .compare.three { grid-template-columns: 1fr; } }
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; gap: 0; padding: 0 16px; }
   nav { position: static; max-height: none; padding: 24px 0 0; border-bottom: 1px solid var(--border); }
@@ -178,6 +190,7 @@ footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--border
     <li><a href="#presets">Presets</a></li>
     <li><a href="#command-line">Command line</a></li>
     <li><a href="#settings">All settings</a></li>
+    <li><a href="#reference">Rules reference</a></li>
   </ul>
   <div class="group">Default style</div>
   <ul>
@@ -256,13 +269,13 @@ dependencies {
 <p>Make sure the plugin is enabled under <em>Settings → palantir-java-format Settings</em>. <em>Reformat Code</em> then formats with Bowerbird.</p>
 
 <h2 id="configure">Configuring the rules</h2>
-<p>Put a <code>bowerbird.yml</code> in a folder of its own, for example <code>config/bowerbird/</code>, and add that folder to the <code>palantirJavaFormat</code> dependencies next to Bowerbird:</p>
+<p>Create a <code>bowerbird.yml</code>, for example in <code>config/</code>, and add the file to the <code>palantirJavaFormat</code> dependencies next to Bowerbird:</p>
 <pre><code>dependencies {
     palantirJavaFormat 'io.github.pieterjanscheir.bowerbird:bowerbird-java-format:&lt;bowerbird version&gt;'
-    palantirJavaFormat files('config/bowerbird')
+    palantirJavaFormat files('config/bowerbird.yml')
 }</code></pre>
 <p>Every setting is optional: list only what you want to change, and everything else keeps its <a href="#settings">default</a>. For example, to keep Bowerbird's style but write <code>if (x)</code>, indent by 2 spaces and keep the blank lines you type:</p>
-<pre><code># config/bowerbird/bowerbird.yml
+<pre><code># config/bowerbird.yml
 indent: 2
 spaceAfterControlKeyword: true
 blankLines:
@@ -283,11 +296,11 @@ palantir-java-format/build/install/palantir-java-format/bin/palantir-java-format
 <p>The <code>JAVA_OPTS</code> line is needed on JDK 16 and later: the formatter uses the JDK's own Java parser, which the JDK only opens up with these flags. An invalid settings file stops with a one-line error and exit code 2.</p>
 <p><code>--palantir</code> without <code>--config</code> uses a <code>bowerbird.yml</code> on the classpath, or Bowerbird's defaults.</p>
 
-<p>Gradle, Spotless and IntelliJ all load the formatter from the <code>palantirJavaFormat</code> dependencies, so they all read the same file; that's why the folder goes there. A few things to know:</p>
+<p>Gradle, Spotless and IntelliJ all load the formatter from the <code>palantirJavaFormat</code> dependencies, so they all read the same file; that's why it goes there. Spotless also notices when the file changes and formats again. A few things to know:</p>
 <ul>
   <li><strong>Mistakes stop formatting.</strong> An unknown setting, a wrong type or invalid YAML fails with a message that names the setting and lists the valid ones, so a typo never goes unnoticed.</li>
   <li><strong>One file.</strong> If <code>bowerbird.yml</code> is on the formatter classpath more than once, formatting fails instead of guessing which one wins.</li>
-  <li><strong>IntelliJ</strong> reads the file each time it formats, so edits apply on the next <em>Reformat Code</em>. Run <code>./gradlew idea</code> or reload the Gradle project once after adding the folder.</li>
+  <li><strong>IntelliJ</strong> reads the file each time it formats, so edits apply on the next <em>Reformat Code</em>. Run <code>./gradlew idea</code> or reload the Gradle project once after adding the file.</li>
   <li><strong>Native formatter:</strong> the native-image formatter can't read a settings file. Leave <code>palantir.native.formatter</code> off.</li>
 </ul>
 
@@ -296,28 +309,28 @@ palantir-java-format/build/install/palantir-java-format/bin/palantir-java-format
 <table>
   <thead><tr><th>Setting</th><th>Default</th><th>What it does</th></tr></thead>
   <tbody>
-    <tr><td><code>preset</code></td><td><code>bowerbird</code></td><td>The starting point for every other setting: <code>bowerbird</code>, <code>palantir</code> or <code>google</code>. See <a href="#presets">presets</a>.</td></tr>
-    <tr><td><code>lineLength</code></td><td><code>120</code></td><td>Maximum line length. At least 40.</td></tr>
-    <tr><td><code>indent</code></td><td><code>4</code></td><td>Spaces per block indent.</td></tr>
-    <tr><td><code>continuationIndent</code></td><td><code>4</code></td><td>Spaces a <a href="#wrapping">wrapped line</a> is indented by, relative to the line it continues. Upstream uses 8.</td></tr>
-    <tr><td><code>spaceAfterControlKeyword</code></td><td><code>false</code></td><td><code>if (x)</code> when true, <code>if(x)</code> when false. Also <code>for</code>, <code>while</code>, <code>switch</code>, <code>try</code>, <code>catch</code> and <code>synchronized</code>. <a href="#control-keywords">Example</a>.</td></tr>
-    <tr><td><code>arrayInitializerBraceSpaces</code></td><td><code>true</code></td><td><code>{ 1, 2 }</code> when true, <code>{1, 2}</code> when false. <a href="#arrays">Example</a>.</td></tr>
-    <tr><td><code>closingParenOnOwnLine</code></td><td><code>true</code></td><td><code>)</code> on its own line when parameters or arguments wrap one per line. When false, <code>)</code> stays on the last line and a lambda passed as the last argument stays on the call's line: <code>execute(account, () -&gt; {</code>. <a href="#wrapping">Example</a>.</td></tr>
-    <tr><td><code>tryResourcesOnOwnLines</code></td><td><code>true</code></td><td>A try with several resources puts each one on its own line, with <code>(</code> and <code>)</code> on their own lines.</td></tr>
-    <tr><td><code>bodyWithoutBracesOnOwnLine</code></td><td><code>true</code></td><td>The body of an <code>if</code>, <code>for</code> or <code>while</code> without braces always goes on its own line. When false, <code>if (x) return;</code> may stay on one line. <a href="#blocks">Example</a>.</td></tr>
-    <tr><td><code>blankLines.keepTyped</code></td><td><code>false</code></td><td>Keep the blank lines you type in code and between members, as upstream does. When false they are removed and only the rules below add blank lines. <a href="#blank-lines">Example</a>.</td></tr>
-    <tr><td><code>blankLines.aroundClassBody</code></td><td><code>true</code></td><td>One blank line after a class header and before the class's closing brace.</td></tr>
-    <tr><td><code>blankLines.betweenFields</code></td><td><code>false</code></td><td>A blank line around each field, like around methods. When false, fields are listed without blank lines, also when they have JavaDoc.</td></tr>
-    <tr><td><code>blankLines.aroundFieldsWithJavadoc</code></td><td><code>false</code></td><td>A blank line around each field that has JavaDoc, as upstream does, even when <code>betweenFields</code> is false.</td></tr>
-    <tr><td><code>blankLines.aroundInterfaceMethods</code></td><td><code>false</code></td><td>A blank line around each method of an interface or annotation type.</td></tr>
-    <tr><td><code>imports.groups</code></td><td><code>[static, java, javax, org, com, "*"]</code></td><td>Import groups, in order. Each entry is a package prefix (<code>java</code>, <code>com.example</code>), <code>static</code> for all static imports, or <code>"*"</code> for everything else. An import goes in the group with the longest matching prefix; imports that match nothing go last. <a href="#imports">Example</a>.</td></tr>
-    <tr><td><code>imports.blankLineBetweenGroups</code></td><td><code>true</code></td><td>A blank line between import groups.</td></tr>
-    <tr><td><code>javadoc.enabled</code></td><td><code>true</code></td><td>Apply the JavaDoc settings below. When false, JavaDoc is left exactly as written. <a href="#javadoc">Example</a>.</td></tr>
-    <tr><td><code>javadoc.removeBlankLinesInDescription</code></td><td><code>true</code></td><td>Remove blank lines inside the description. When false, paragraph breaks are kept (one blank line each).</td></tr>
-    <tr><td><code>javadoc.blankLineAfterDescription</code></td><td><code>true</code></td><td>One blank line between the description and the first tag.</td></tr>
-    <tr><td><code>javadoc.blankLineAfterParams</code></td><td><code>true</code></td><td>One blank line after the block of <code>@param</code> tags, when more tags follow.</td></tr>
-    <tr><td><code>javadoc.blankLineAfterReturn</code></td><td><code>true</code></td><td>One blank line after <code>@return</code>, when more tags follow.</td></tr>
-    <tr><td><code>javadoc.singleSpaceAfterTagName</code></td><td><code>true</code></td><td>Exactly one space between a <code>@param</code> or <code>@throws</code> name and its description.</td></tr>
+    <tr><td><a href="#rule-preset"><code>preset</code></a></td><td><code>bowerbird</code></td><td>The starting point for every other setting: <code>bowerbird</code>, <code>palantir</code> or <code>google</code>. See <a href="#presets">presets</a>.</td></tr>
+    <tr><td><a href="#rule-linelength"><code>lineLength</code></a></td><td><code>120</code></td><td>Maximum line length. At least 40.</td></tr>
+    <tr><td><a href="#rule-indent"><code>indent</code></a></td><td><code>4</code></td><td>Spaces per block indent.</td></tr>
+    <tr><td><a href="#rule-continuationindent"><code>continuationIndent</code></a></td><td><code>4</code></td><td>Spaces a <a href="#wrapping">wrapped line</a> is indented by, relative to the line it continues. Upstream uses 8.</td></tr>
+    <tr><td><a href="#rule-spaceaftercontrolkeyword"><code>spaceAfterControlKeyword</code></a></td><td><code>false</code></td><td><code>if (x)</code> when true, <code>if(x)</code> when false. Also <code>for</code>, <code>while</code>, <code>switch</code>, <code>try</code>, <code>catch</code> and <code>synchronized</code>. <a href="#control-keywords">Example</a>.</td></tr>
+    <tr><td><a href="#rule-arrayinitializerbracespaces"><code>arrayInitializerBraceSpaces</code></a></td><td><code>true</code></td><td><code>{ 1, 2 }</code> when true, <code>{1, 2}</code> when false. <a href="#arrays">Example</a>.</td></tr>
+    <tr><td><a href="#rule-closingparenonownline"><code>closingParenOnOwnLine</code></a></td><td><code>true</code></td><td><code>)</code> on its own line when parameters or arguments wrap one per line. When false, <code>)</code> stays on the last line and a lambda passed as the last argument stays on the call's line: <code>execute(account, () -&gt; {</code>. <a href="#wrapping">Example</a>.</td></tr>
+    <tr><td><a href="#rule-tryresourcesonownlines"><code>tryResourcesOnOwnLines</code></a></td><td><code>true</code></td><td>A try with several resources puts each one on its own line, with <code>(</code> and <code>)</code> on their own lines.</td></tr>
+    <tr><td><a href="#rule-bodywithoutbracesonownline"><code>bodyWithoutBracesOnOwnLine</code></a></td><td><code>true</code></td><td>The body of an <code>if</code>, <code>for</code> or <code>while</code> without braces always goes on its own line. When false, <code>if (x) return;</code> may stay on one line. <a href="#blocks">Example</a>.</td></tr>
+    <tr><td><a href="#rule-blanklines-keeptyped"><code>blankLines.keepTyped</code></a></td><td><code>false</code></td><td>Keep the blank lines you type in code and between members, as upstream does. When false they are removed and only the rules below add blank lines. <a href="#blank-lines">Example</a>.</td></tr>
+    <tr><td><a href="#rule-blanklines-aroundclassbody"><code>blankLines.aroundClassBody</code></a></td><td><code>true</code></td><td>One blank line after a class header and before the class's closing brace.</td></tr>
+    <tr><td><a href="#rule-blanklines-betweenfields"><code>blankLines.betweenFields</code></a></td><td><code>false</code></td><td>A blank line around each field, like around methods. When false, fields are listed without blank lines, also when they have JavaDoc.</td></tr>
+    <tr><td><a href="#rule-blanklines-aroundfieldswithjavadoc"><code>blankLines.aroundFieldsWithJavadoc</code></a></td><td><code>false</code></td><td>A blank line around each field that has JavaDoc, as upstream does, even when <code>betweenFields</code> is false.</td></tr>
+    <tr><td><a href="#rule-blanklines-aroundinterfacemethods"><code>blankLines.aroundInterfaceMethods</code></a></td><td><code>false</code></td><td>A blank line around each method of an interface or annotation type.</td></tr>
+    <tr><td><a href="#rule-imports-groups"><code>imports.groups</code></a></td><td><code>[static, java, javax, org, com, "*"]</code></td><td>Import groups, in order. Each entry is a package prefix (<code>java</code>, <code>com.example</code>), <code>static</code> for all static imports, or <code>"*"</code> for everything else. An import goes in the group with the longest matching prefix; imports that match nothing go last. <a href="#imports">Example</a>.</td></tr>
+    <tr><td><a href="#rule-imports-blanklinebetweengroups"><code>imports.blankLineBetweenGroups</code></a></td><td><code>true</code></td><td>A blank line between import groups.</td></tr>
+    <tr><td><a href="#rule-javadoc-enabled"><code>javadoc.enabled</code></a></td><td><code>true</code></td><td>Apply the JavaDoc settings below. When false, JavaDoc is left exactly as written. <a href="#javadoc">Example</a>.</td></tr>
+    <tr><td><a href="#rule-javadoc-removeblanklinesindescription"><code>javadoc.removeBlankLinesInDescription</code></a></td><td><code>true</code></td><td>Remove blank lines inside the description. When false, paragraph breaks are kept (one blank line each).</td></tr>
+    <tr><td><a href="#rule-javadoc-blanklineafterdescription"><code>javadoc.blankLineAfterDescription</code></a></td><td><code>true</code></td><td>One blank line between the description and the first tag.</td></tr>
+    <tr><td><a href="#rule-javadoc-blanklineafterparams"><code>javadoc.blankLineAfterParams</code></a></td><td><code>true</code></td><td>One blank line after the block of <code>@param</code> tags, when more tags follow.</td></tr>
+    <tr><td><a href="#rule-javadoc-blanklineafterreturn"><code>javadoc.blankLineAfterReturn</code></a></td><td><code>true</code></td><td>One blank line after <code>@return</code>, when more tags follow.</td></tr>
+    <tr><td><a href="#rule-javadoc-singlespaceaftertagname"><code>javadoc.singleSpaceAfterTagName</code></a></td><td><code>true</code></td><td>Exactly one space between a <code>@param</code> or <code>@throws</code> name and its description.</td></tr>
   </tbody>
 </table>
 <p>Here is a complete file with every setting at its default, to copy and edit:</p>
@@ -346,6 +359,993 @@ javadoc:
   blankLineAfterParams: true
   blankLineAfterReturn: true
   singleSpaceAfterTagName: true</code></pre>
+
+<!-- rules-reference:start -->
+<h3 id="reference">Rules reference</h3>
+<p>Every setting, what it accepts, and what it does. The examples are the formatter's real output for the input shown: each column sets only that one setting, everything else stays at Bowerbird's defaults.</p>
+<div class="rule" id="rule-preset">
+<h4><code>preset</code></h4>
+<p>The starting point for every other setting. <code>bowerbird</code> is Bowerbird's own style; <code>palantir</code> is exactly upstream palantir-java-format (tested against all 226 upstream test cases); <code>google</code> is upstream's Google style. Settings in the same file change the preset, wherever <code>preset</code> appears in it.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>bowerbird</code>, <code>palantir</code> or <code>google</code></td></tr><tr><th>Default</th><td><code>bowerbird</code></td></tr></table>
+<p class="note">Compare the same input in each preset.</p>
+<details><summary>Input</summary><pre><code>package example;
+import java.util.List;
+import static java.util.Objects.requireNonNull;
+import com.example.Order;
+class Orders {
+    /** The open orders. */
+    private final List&lt;Order&gt; open = List.of();
+    private final int[] limits = {1, 2, 3};
+    int count(Order order) {
+        requireNonNull(order);
+        if (open.isEmpty()) return 0;
+        return open.size();
+    }
+}</code></pre></details>
+<div class="compare three">
+<div><div class="label yaml">preset: bowerbird</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import java.util.List;
+
+import com.example.Order;
+
+class Orders {
+
+    /** The open orders. */
+    private final List&lt;Order&gt; open = List.of();
+    private final int[] limits = { 1, 2, 3 };
+
+    int count(Order order) {
+        requireNonNull(order);
+        if(open.isEmpty())
+            return 0;
+        return open.size();
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">preset: palantir</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import com.example.Order;
+import java.util.List;
+
+class Orders {
+    /** The open orders. */
+    private final List&lt;Order&gt; open = List.of();
+
+    private final int[] limits = {1, 2, 3};
+
+    int count(Order order) {
+        requireNonNull(order);
+        if (open.isEmpty()) return 0;
+        return open.size();
+    }
+}</code></pre></div>
+<div><div class="label yaml">preset: google</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import com.example.Order;
+import java.util.List;
+
+class Orders {
+  /** The open orders. */
+  private final List&lt;Order&gt; open = List.of();
+
+  private final int[] limits = {1, 2, 3};
+
+  int count(Order order) {
+    requireNonNull(order);
+    if (open.isEmpty()) return 0;
+    return open.size();
+  }
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-linelength">
+<h4><code>lineLength</code></h4>
+<p>The maximum line length. Longer lines are wrapped; long string literals are split.</p>
+<table class="rule-facts"><tr><th>Values</th><td>a whole number, at least 40</td></tr><tr><th>Default</th><td><code>120</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>120</code> · <code>google</code>: <code>100</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    void place() {
+        orderService.placeOrder(account, instrument, quantity, limitPrice, timeInForce);
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">lineLength: 120</div><pre><code>class Example {
+
+    void place() {
+        orderService.placeOrder(account, instrument, quantity, limitPrice, timeInForce);
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">lineLength: 80</div><pre><code>class Example {
+
+    void place() {
+        orderService.placeOrder(
+            account, instrument, quantity, limitPrice, timeInForce);
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-indent">
+<h4><code>indent</code></h4>
+<p>Spaces per block indent: the body of a class, method, loop or <code>if</code>.</p>
+<table class="rule-facts"><tr><th>Values</th><td>a whole number of spaces, at least 1</td></tr><tr><th>Default</th><td><code>4</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>4</code> · <code>google</code>: <code>2</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    void check(int x) {
+        if (x &gt; 0) {
+            run(x);
+        }
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">indent: 4</div><pre><code>class Example {
+
+    void check(int x) {
+        if(x &gt; 0) {
+            run(x);
+        }
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">indent: 2</div><pre><code>class Example {
+
+  void check(int x) {
+    if(x &gt; 0) {
+      run(x);
+    }
+  }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-continuationindent">
+<h4><code>continuationIndent</code></h4>
+<p>Spaces a wrapped line is indented by, relative to the line it continues.</p>
+<table class="rule-facts"><tr><th>Values</th><td>a whole number of spaces, at least 1</td></tr><tr><th>Default</th><td><code>4</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>8</code> · <code>google</code>: <code>4</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    void place() {
+        OrderResult result = orderService.placeOrderWithAVeryLongName(firstAccountArgument, secondInstrumentArgument, third);
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">continuationIndent: 4</div><pre><code>class Example {
+
+    void place() {
+        OrderResult result =
+            orderService.placeOrderWithAVeryLongName(firstAccountArgument, secondInstrumentArgument, third);
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">continuationIndent: 8</div><pre><code>class Example {
+
+    void place() {
+        OrderResult result =
+                orderService.placeOrderWithAVeryLongName(firstAccountArgument, secondInstrumentArgument, third);
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-spaceaftercontrolkeyword">
+<h4><code>spaceAfterControlKeyword</code></h4>
+<p>A space between <code>if</code>, <code>for</code>, <code>while</code>, <code>switch</code>, <code>try</code>, <code>catch</code> or <code>synchronized</code> and its <code>(</code>.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>false</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    void run(int[] values) {
+        for (int value : values) {
+            if (value &gt; 0) {
+                process(value);
+            }
+        }
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">spaceAfterControlKeyword: false</div><pre><code>class Example {
+
+    void run(int[] values) {
+        for(int value : values) {
+            if(value &gt; 0) {
+                process(value);
+            }
+        }
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">spaceAfterControlKeyword: true</div><pre><code>class Example {
+
+    void run(int[] values) {
+        for (int value : values) {
+            if (value &gt; 0) {
+                process(value);
+            }
+        }
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-arrayinitializerbracespaces">
+<h4><code>arrayInitializerBraceSpaces</code></h4>
+<p>A space inside the braces of an array initializer, also in annotation arguments: <code>{ 1, 2 }</code> instead of <code>{1, 2}</code>. Empty braces stay <code>{}</code>.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    int[] numbers = new int[] {1, 2, 3};
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void run() {}
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">arrayInitializerBraceSpaces: true</div><pre><code>class Example {
+
+    int[] numbers = new int[] { 1, 2, 3 };
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    void run() {}
+
+}</code></pre></div>
+<div><div class="label yaml">arrayInitializerBraceSpaces: false</div><pre><code>class Example {
+
+    int[] numbers = new int[] {1, 2, 3};
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void run() {}
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-closingparenonownline">
+<h4><code>closingParenOnOwnLine</code></h4>
+<p>When parameters or arguments wrap one per line, <code>)</code> goes on its own line. When false, <code>)</code> stays on the last line, and a lambda passed as the last argument stays on the call's line.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    void run() {
+        service.submit(builder.withAccount(firstAccountArgument).withInstrument(secondInstrumentArgument).build(), options, callback);
+        executor.execute(account, () -&gt; {
+            run();
+        });
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">closingParenOnOwnLine: true</div><pre><code>class Example {
+
+    void run() {
+        service.submit(
+            builder.withAccount(firstAccountArgument)
+                .withInstrument(secondInstrumentArgument)
+                .build(),
+            options,
+            callback
+        );
+        executor.execute(
+            account,
+            () -&gt; {
+                run();
+            }
+        );
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">closingParenOnOwnLine: false</div><pre><code>class Example {
+
+    void run() {
+        service.submit(
+            builder.withAccount(firstAccountArgument)
+                .withInstrument(secondInstrumentArgument)
+                .build(),
+            options,
+            callback);
+        executor.execute(account, () -&gt; {
+            run();
+        });
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-tryresourcesonownlines">
+<h4><code>tryResourcesOnOwnLines</code></h4>
+<p>A <code>try</code> with several resources puts each one on its own line, with <code>(</code> and <code>)</code> on their own lines.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    void run() throws Exception {
+        try (InputStream first = openTheFirstStream(account, instrument); InputStream second = openTheSecondStream(account)) {
+            run();
+        }
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">tryResourcesOnOwnLines: true</div><pre><code>class Example {
+
+    void run() throws Exception {
+        try(
+            InputStream first = openTheFirstStream(account, instrument);
+            InputStream second = openTheSecondStream(account)
+        ) {
+            run();
+        }
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">tryResourcesOnOwnLines: false</div><pre><code>class Example {
+
+    void run() throws Exception {
+        try(InputStream first = openTheFirstStream(account, instrument);
+            InputStream second = openTheSecondStream(account)) {
+            run();
+        }
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-bodywithoutbracesonownline">
+<h4><code>bodyWithoutBracesOnOwnLine</code></h4>
+<p>The body of an <code>if</code>, <code>for</code> or <code>while</code> without braces always goes on its own line. When false it may stay on the same line if it fits.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    int check(int x) {
+        if (x &lt; 0) return 0;
+        return x;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">bodyWithoutBracesOnOwnLine: true</div><pre><code>class Example {
+
+    int check(int x) {
+        if(x &lt; 0)
+            return 0;
+        return x;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">bodyWithoutBracesOnOwnLine: false</div><pre><code>class Example {
+
+    int check(int x) {
+        if(x &lt; 0) return 0;
+        return x;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-blanklines-keeptyped">
+<h4><code>blankLines.keepTyped</code></h4>
+<p>Keep the blank lines you type in code and between members (at most one in a row), as upstream does. When false they are removed, and only the other <code>blankLines</code> settings add blank lines.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>false</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    private int first;
+
+    private int second;
+    void run() {
+
+        int a = 1;
+
+        int b = 2;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;keepTyped: false</div><pre><code>class Example {
+
+    private int first;
+    private int second;
+
+    void run() {
+        int a = 1;
+        int b = 2;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;keepTyped: true</div><pre><code>class Example {
+
+    private int first;
+
+    private int second;
+
+    void run() {
+
+        int a = 1;
+
+        int b = 2;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-blanklines-aroundclassbody">
+<h4><code>blankLines.aroundClassBody</code></h4>
+<p>One blank line after a class, interface or enum header and before its closing brace. Enums and anonymous classes don't get the one before the closing brace.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    private int value;
+    int value() {
+        return value;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundClassBody: true</div><pre><code>class Example {
+
+    private int value;
+
+    int value() {
+        return value;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundClassBody: false</div><pre><code>class Example {
+    private int value;
+
+    int value() {
+        return value;
+    }
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-blanklines-betweenfields">
+<h4><code>blankLines.betweenFields</code></h4>
+<p>A blank line around every field, like around methods. When false, fields are listed without blank lines.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>false</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    private int first;
+    private int second;
+    private int third;
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;betweenFields: false</div><pre><code>class Example {
+
+    private int first;
+    private int second;
+    private int third;
+
+}</code></pre></div>
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;betweenFields: true</div><pre><code>class Example {
+
+    private int first;
+
+    private int second;
+
+    private int third;
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-blanklines-aroundfieldswithjavadoc">
+<h4><code>blankLines.aroundFieldsWithJavadoc</code></h4>
+<p>A blank line around a field that has JavaDoc, even when <code>betweenFields</code> is false. Upstream does this.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>false</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    private int first;
+    /** The second value. */
+    private int second;
+    private int third;
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundFieldsWithJavadoc: false</div><pre><code>class Example {
+
+    private int first;
+    /** The second value. */
+    private int second;
+    private int third;
+
+}</code></pre></div>
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundFieldsWithJavadoc: true</div><pre><code>class Example {
+
+    private int first;
+
+    /** The second value. */
+    private int second;
+
+    private int third;
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-blanklines-aroundinterfacemethods">
+<h4><code>blankLines.aroundInterfaceMethods</code></h4>
+<p>A blank line around each method of an interface or annotation type. Methods in classes always get one.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>false</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<details><summary>Input</summary><pre><code>interface Repository {
+    void save();
+    void delete();
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundInterfaceMethods: false</div><pre><code>interface Repository {
+
+    void save();
+    void delete();
+
+}</code></pre></div>
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundInterfaceMethods: true</div><pre><code>interface Repository {
+
+    void save();
+
+    void delete();
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-imports-groups">
+<h4><code>imports.groups</code></h4>
+<p>Import groups, in order. A package prefix such as <code>java</code> or <code>com.example</code> matches that package and everything under it; an import goes in the group with the longest matching prefix. <code>static</code> holds all static imports, <code>"*"</code> everything no other group matches; imports that match no group go last. Imports are sorted by name within a group.</p>
+<table class="rule-facts"><tr><th>Values</th><td>a list of package prefixes, <code>static</code> and <code>"*"</code></td></tr><tr><th>Default</th><td><code>[static, java, javax, org, com, *]</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>[static, *]</code> · <code>google</code>: <code>[static, *]</code></td></tr></table>
+<details><summary>Input</summary><pre><code>package example;
+import net.other.Thing;
+import com.example.trading.Order;
+import java.util.List;
+import static java.util.Objects.requireNonNull;
+import org.slf4j.Logger;
+import com.google.common.collect.ImmutableList;
+class Example {
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+    void check() {
+        requireNonNull(order);
+    }
+}</code></pre></details>
+<div class="compare three">
+<div><div class="label yaml">imports:<br>&nbsp;&nbsp;groups: [static, java, javax, org, com, &quot;*&quot;]</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import java.util.List;
+
+import org.slf4j.Logger;
+
+import com.example.trading.Order;
+import com.google.common.collect.ImmutableList;
+
+import net.other.Thing;
+
+class Example {
+
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+
+    void check() {
+        requireNonNull(order);
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">imports:<br>&nbsp;&nbsp;groups: [static, &quot;*&quot;]</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import com.example.trading.Order;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import net.other.Thing;
+import org.slf4j.Logger;
+
+class Example {
+
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+
+    void check() {
+        requireNonNull(order);
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">imports:<br>&nbsp;&nbsp;groups: [java, com.example, &quot;*&quot;, static]</div><pre><code>package example;
+
+import java.util.List;
+
+import com.example.trading.Order;
+
+import com.google.common.collect.ImmutableList;
+import net.other.Thing;
+import org.slf4j.Logger;
+
+import static java.util.Objects.requireNonNull;
+
+class Example {
+
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+
+    void check() {
+        requireNonNull(order);
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-imports-blanklinebetweengroups">
+<h4><code>imports.blankLineBetweenGroups</code></h4>
+<p>A blank line between import groups.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<details><summary>Input</summary><pre><code>package example;
+import net.other.Thing;
+import com.example.trading.Order;
+import java.util.List;
+import static java.util.Objects.requireNonNull;
+import org.slf4j.Logger;
+import com.google.common.collect.ImmutableList;
+class Example {
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+    void check() {
+        requireNonNull(order);
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">imports:<br>&nbsp;&nbsp;blankLineBetweenGroups: true</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import java.util.List;
+
+import org.slf4j.Logger;
+
+import com.example.trading.Order;
+import com.google.common.collect.ImmutableList;
+
+import net.other.Thing;
+
+class Example {
+
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+
+    void check() {
+        requireNonNull(order);
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">imports:<br>&nbsp;&nbsp;blankLineBetweenGroups: false</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+import java.util.List;
+import org.slf4j.Logger;
+import com.example.trading.Order;
+import com.google.common.collect.ImmutableList;
+import net.other.Thing;
+
+class Example {
+
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+
+    void check() {
+        requireNonNull(order);
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-enabled">
+<h4><code>javadoc.enabled</code></h4>
+<p>Apply the <code>javadoc</code> settings below. When false, JavaDoc is left exactly as written. One-line JavaDoc and JavaDoc containing <code>&lt;pre&gt;</code> are never changed.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>Input</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;enabled: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;enabled: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-removeblanklinesindescription">
+<h4><code>javadoc.removeBlankLinesInDescription</code></h4>
+<p>Remove blank lines inside the description. When false, paragraph breaks are kept, one blank line each.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<p class="note">In the <code>palantir</code> and <code>google</code> presets, <code>javadoc.enabled</code> is false, so this setting has no effect there unless you enable it.</p>
+<details><summary>Input</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;removeBlankLinesInDescription: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;removeBlankLinesInDescription: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-blanklineafterdescription">
+<h4><code>javadoc.blankLineAfterDescription</code></h4>
+<p>One blank line between the description and the first tag.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<p class="note">In the <code>palantir</code> and <code>google</code> presets, <code>javadoc.enabled</code> is false, so this setting has no effect there unless you enable it.</p>
+<details><summary>Input</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterDescription: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterDescription: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-blanklineafterparams">
+<h4><code>javadoc.blankLineAfterParams</code></h4>
+<p>One blank line after the block of <code>@param</code> tags, when more tags follow.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<p class="note">In the <code>palantir</code> and <code>google</code> presets, <code>javadoc.enabled</code> is false, so this setting has no effect there unless you enable it.</p>
+<details><summary>Input</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterParams: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterParams: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-blanklineafterreturn">
+<h4><code>javadoc.blankLineAfterReturn</code></h4>
+<p>One blank line after <code>@return</code>, when more tags follow.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<p class="note">In the <code>palantir</code> and <code>google</code> presets, <code>javadoc.enabled</code> is false, so this setting has no effect there unless you enable it.</p>
+<details><summary>Input</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterReturn: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterReturn: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-singlespaceaftertagname">
+<h4><code>javadoc.singleSpaceAfterTagName</code></h4>
+<p>Exactly one space between a <code>@param</code> or <code>@throws</code> name and its description, and after other tags.</p>
+<table class="rule-facts"><tr><th>Values</th><td><code>true</code> or <code>false</code></td></tr><tr><th>Default</th><td><code>true</code></td></tr><tr><th>In presets</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<p class="note">In the <code>palantir</code> and <code>google</code> presets, <code>javadoc.enabled</code> is false, so this setting has no effect there unless you enable it.</p>
+<details><summary>Input</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;singleSpaceAfterTagName: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;singleSpaceAfterTagName: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account   the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<!-- rules-reference:end -->
 
 <h2 id="rules">Default style</h2>
 <p>Without a <code>bowerbird.yml</code>, Bowerbird formats as shown below. Each rule is a <a href="#settings">setting</a> you can change; the setting is named in brackets. Compared to upstream palantir-java-format:</p>

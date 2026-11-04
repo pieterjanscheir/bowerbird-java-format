@@ -116,6 +116,7 @@ pre {
   margin: 12px 0 20px;
 }
 pre code { background: none; padding: 0; font-size: inherit; }
+:not(pre) > code { overflow-wrap: anywhere; }
 table { border-collapse: collapse; width: 100%; margin: 12px 0 20px; font-size: 14px; display: block; overflow-x: auto; }
 th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
 th { color: var(--muted); font-weight: 600; }
@@ -148,6 +149,17 @@ footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--border
   padding: 4px 10px;
   cursor: pointer;
 }
+.compare.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.compare .label.yaml { font-family: var(--mono); text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--accent); font-size: 12px; }
+.rule { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 28px; }
+.rule h4 { font-size: 17px; margin: 8px 0 6px; }
+.rule h4 code { font-size: 1em; background: none; padding: 0; }
+table.rule-facts { width: auto; margin: 8px 0 12px; }
+table.rule-facts th { white-space: nowrap; padding-right: 16px; }
+p.note { color: var(--muted); font-size: 14px; }
+details { margin: 8px 0; }
+details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+@media (max-width: 900px) { .compare.three { grid-template-columns: 1fr; } }
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; gap: 0; padding: 0 16px; }
   nav { position: static; max-height: none; padding: 24px 0 0; border-bottom: 1px solid var(--border); }
@@ -178,6 +190,7 @@ footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--border
     <li><a href="#presets">预设</a></li>
     <li><a href="#command-line">命令行</a></li>
     <li><a href="#settings">全部配置项</a></li>
+    <li><a href="#reference">规则参考</a></li>
   </ul>
   <div class="group">默认风格</div>
   <ul>
@@ -256,13 +269,13 @@ dependencies {
 <p>请确认已在 <em>Settings → palantir-java-format Settings</em> 中启用该插件。之后 <em>Reformat Code</em> 就会使用 Bowerbird 进行格式化。</p>
 
 <h2 id="configure">配置规则</h2>
-<p>把 <code>bowerbird.yml</code> 放在一个单独的目录中，例如 <code>config/bowerbird/</code>，然后把该目录与 Bowerbird 一起加入 <code>palantirJavaFormat</code> 依赖：</p>
+<p>创建一个 <code>bowerbird.yml</code>，例如放在 <code>config/</code> 中，然后把该文件与 Bowerbird 一起加入 <code>palantirJavaFormat</code> 依赖：</p>
 <pre><code>dependencies {
     palantirJavaFormat 'io.github.pieterjanscheir.bowerbird:bowerbird-java-format:&lt;bowerbird version&gt;'
-    palantirJavaFormat files('config/bowerbird')
+    palantirJavaFormat files('config/bowerbird.yml')
 }</code></pre>
 <p>所有配置项都是可选的：只需列出想要修改的项，其余均保持<a href="#settings">默认值</a>。例如，保留 Bowerbird 的风格，但写成 <code>if (x)</code>、使用 2 个空格缩进，并保留你输入的空行：</p>
-<pre><code># config/bowerbird/bowerbird.yml
+<pre><code># config/bowerbird.yml
 indent: 2
 spaceAfterControlKeyword: true
 blankLines:
@@ -283,11 +296,11 @@ palantir-java-format/build/install/palantir-java-format/bin/palantir-java-format
 <p>在 JDK 16 及更高版本上需要 <code>JAVA_OPTS</code> 这一行：格式化器使用 JDK 自带的 Java 解析器，而 JDK 只有在加上这些参数时才会开放它。配置文件无效时，会输出一行错误信息并以退出码 2 结束。</p>
 <p>只指定 <code>--palantir</code> 而不指定 <code>--config</code> 时，会使用 classpath 上的 <code>bowerbird.yml</code>；如果没有，则使用 Bowerbird 的默认值。</p>
 
-<p>Gradle、Spotless 和 IntelliJ 都从 <code>palantirJavaFormat</code> 依赖中加载格式化器，因此读取的是同一个文件；这正是要把该目录放在那里的原因。需要注意以下几点：</p>
+<p>Gradle、Spotless 和 IntelliJ 都从 <code>palantirJavaFormat</code> 依赖中加载格式化器，因此读取的是同一个文件；这正是要把它放在那里的原因。文件修改后，Spotless 也会察觉并重新格式化。需要注意以下几点：</p>
 <ul>
   <li><strong>配置错误会中止格式化。</strong>未知的配置项、错误的类型或无效的 YAML 都会导致失败，错误信息会指出出错的配置项并列出所有有效配置项，因此拼写错误不会被忽略。</li>
   <li><strong>只能有一个文件。</strong>如果格式化器的 classpath 上出现多个 <code>bowerbird.yml</code>，格式化会直接失败，而不会去猜测应该以哪个为准。</li>
-  <li><strong>IntelliJ</strong> 每次格式化时都会读取该文件，因此修改会在下一次 <em>Reformat Code</em> 时生效。添加该目录后，请运行一次 <code>./gradlew idea</code> 或重新加载 Gradle 项目。</li>
+  <li><strong>IntelliJ</strong> 每次格式化时都会读取该文件，因此修改会在下一次 <em>Reformat Code</em> 时生效。添加该文件后，请运行一次 <code>./gradlew idea</code> 或重新加载 Gradle 项目。</li>
   <li><strong>原生格式化器：</strong>native-image 格式化器无法读取配置文件。请保持 <code>palantir.native.formatter</code> 关闭。</li>
 </ul>
 
@@ -296,28 +309,28 @@ palantir-java-format/build/install/palantir-java-format/bin/palantir-java-format
 <table>
   <thead><tr><th>配置项</th><th>默认值</th><th>作用</th></tr></thead>
   <tbody>
-    <tr><td><code>preset</code></td><td><code>bowerbird</code></td><td>其他所有配置项的起点：<code>bowerbird</code>、<code>palantir</code> 或 <code>google</code>。参见<a href="#presets">预设</a>。</td></tr>
-    <tr><td><code>lineLength</code></td><td><code>120</code></td><td>最大行宽，不能小于 40。</td></tr>
-    <tr><td><code>indent</code></td><td><code>4</code></td><td>每级代码块缩进的空格数。</td></tr>
-    <tr><td><code>continuationIndent</code></td><td><code>4</code></td><td><a href="#wrapping">换行后的续行</a>相对于其所接续的行缩进的空格数。上游使用 8。</td></tr>
-    <tr><td><code>spaceAfterControlKeyword</code></td><td><code>false</code></td><td>为 true 时写作 <code>if (x)</code>，为 false 时写作 <code>if(x)</code>。同样适用于 <code>for</code>、<code>while</code>、<code>switch</code>、<code>try</code>、<code>catch</code> 和 <code>synchronized</code>。<a href="#control-keywords">示例</a>。</td></tr>
-    <tr><td><code>arrayInitializerBraceSpaces</code></td><td><code>true</code></td><td>为 true 时写作 <code>{ 1, 2 }</code>，为 false 时写作 <code>{1, 2}</code>。<a href="#arrays">示例</a>。</td></tr>
-    <tr><td><code>closingParenOnOwnLine</code></td><td><code>true</code></td><td>当形参或实参按每行一个换行时，<code>)</code> 单独占一行。为 false 时，<code>)</code> 留在最后一行，作为最后一个实参传入的 lambda 也留在调用所在的行：<code>execute(account, () -&gt; {</code>。<a href="#wrapping">示例</a>。</td></tr>
-    <tr><td><code>tryResourcesOnOwnLines</code></td><td><code>true</code></td><td>包含多个资源的 try 语句中，每个资源各占一行，<code>(</code> 和 <code>)</code> 也各自单独占一行。</td></tr>
-    <tr><td><code>bodyWithoutBracesOnOwnLine</code></td><td><code>true</code></td><td>不带花括号的 <code>if</code>、<code>for</code> 或 <code>while</code> 语句体总是另起一行。为 false 时，<code>if (x) return;</code> 可以保持在同一行。<a href="#blocks">示例</a>。</td></tr>
-    <tr><td><code>blankLines.keepTyped</code></td><td><code>false</code></td><td>与上游一样，保留你在代码中和成员之间输入的空行。为 false 时这些空行会被删除，只由下面的规则添加空行。<a href="#blank-lines">示例</a>。</td></tr>
-    <tr><td><code>blankLines.aroundClassBody</code></td><td><code>true</code></td><td>在类声明头之后和类的右花括号之前各保留一个空行。</td></tr>
-    <tr><td><code>blankLines.betweenFields</code></td><td><code>false</code></td><td>像方法一样，在每个字段前后添加空行。为 false 时，字段之间不留空行，即使字段带有 JavaDoc 也是如此。</td></tr>
-    <tr><td><code>blankLines.aroundFieldsWithJavadoc</code></td><td><code>false</code></td><td>与上游一样，在每个带 JavaDoc 的字段前后添加空行，即使 <code>betweenFields</code> 为 false。</td></tr>
-    <tr><td><code>blankLines.aroundInterfaceMethods</code></td><td><code>false</code></td><td>在接口或注解类型的每个方法前后添加空行。</td></tr>
-    <tr><td><code>imports.groups</code></td><td><code>[static, java, javax, org, com, "*"]</code></td><td>按顺序排列的导入分组。每一项可以是包名前缀（<code>java</code>、<code>com.example</code>）、表示所有静态导入的 <code>static</code>，或表示其余所有导入的 <code>"*"</code>。每个导入归入前缀匹配最长的分组；没有任何匹配的导入放在最后。<a href="#imports">示例</a>。</td></tr>
-    <tr><td><code>imports.blankLineBetweenGroups</code></td><td><code>true</code></td><td>在导入分组之间添加空行。</td></tr>
-    <tr><td><code>javadoc.enabled</code></td><td><code>true</code></td><td>应用下面的 JavaDoc 配置项。为 false 时，JavaDoc 完全保持原样。<a href="#javadoc">示例</a>。</td></tr>
-    <tr><td><code>javadoc.removeBlankLinesInDescription</code></td><td><code>true</code></td><td>删除描述部分内的空行。为 false 时保留段落分隔（每处一个空行）。</td></tr>
-    <tr><td><code>javadoc.blankLineAfterDescription</code></td><td><code>true</code></td><td>在描述与第一个标签之间保留一个空行。</td></tr>
-    <tr><td><code>javadoc.blankLineAfterParams</code></td><td><code>true</code></td><td>当后面还有其他标签时，在 <code>@param</code> 标签块之后保留一个空行。</td></tr>
-    <tr><td><code>javadoc.blankLineAfterReturn</code></td><td><code>true</code></td><td>当后面还有其他标签时，在 <code>@return</code> 之后保留一个空行。</td></tr>
-    <tr><td><code>javadoc.singleSpaceAfterTagName</code></td><td><code>true</code></td><td><code>@param</code> 或 <code>@throws</code> 的名称与其描述之间恰好保留一个空格。</td></tr>
+    <tr><td><a href="#rule-preset"><code>preset</code></a></td><td><code>bowerbird</code></td><td>其他所有配置项的起点：<code>bowerbird</code>、<code>palantir</code> 或 <code>google</code>。参见<a href="#presets">预设</a>。</td></tr>
+    <tr><td><a href="#rule-linelength"><code>lineLength</code></a></td><td><code>120</code></td><td>最大行宽，不能小于 40。</td></tr>
+    <tr><td><a href="#rule-indent"><code>indent</code></a></td><td><code>4</code></td><td>每级代码块缩进的空格数。</td></tr>
+    <tr><td><a href="#rule-continuationindent"><code>continuationIndent</code></a></td><td><code>4</code></td><td><a href="#wrapping">换行后的续行</a>相对于其所接续的行缩进的空格数。上游使用 8。</td></tr>
+    <tr><td><a href="#rule-spaceaftercontrolkeyword"><code>spaceAfterControlKeyword</code></a></td><td><code>false</code></td><td>为 true 时写作 <code>if (x)</code>，为 false 时写作 <code>if(x)</code>。同样适用于 <code>for</code>、<code>while</code>、<code>switch</code>、<code>try</code>、<code>catch</code> 和 <code>synchronized</code>。<a href="#control-keywords">示例</a>。</td></tr>
+    <tr><td><a href="#rule-arrayinitializerbracespaces"><code>arrayInitializerBraceSpaces</code></a></td><td><code>true</code></td><td>为 true 时写作 <code>{ 1, 2 }</code>，为 false 时写作 <code>{1, 2}</code>。<a href="#arrays">示例</a>。</td></tr>
+    <tr><td><a href="#rule-closingparenonownline"><code>closingParenOnOwnLine</code></a></td><td><code>true</code></td><td>当形参或实参按每行一个换行时，<code>)</code> 单独占一行。为 false 时，<code>)</code> 留在最后一行，作为最后一个实参传入的 lambda 也留在调用所在的行：<code>execute(account, () -&gt; {</code>。<a href="#wrapping">示例</a>。</td></tr>
+    <tr><td><a href="#rule-tryresourcesonownlines"><code>tryResourcesOnOwnLines</code></a></td><td><code>true</code></td><td>包含多个资源的 try 语句中，每个资源各占一行，<code>(</code> 和 <code>)</code> 也各自单独占一行。</td></tr>
+    <tr><td><a href="#rule-bodywithoutbracesonownline"><code>bodyWithoutBracesOnOwnLine</code></a></td><td><code>true</code></td><td>不带花括号的 <code>if</code>、<code>for</code> 或 <code>while</code> 语句体总是另起一行。为 false 时，<code>if (x) return;</code> 可以保持在同一行。<a href="#blocks">示例</a>。</td></tr>
+    <tr><td><a href="#rule-blanklines-keeptyped"><code>blankLines.keepTyped</code></a></td><td><code>false</code></td><td>与上游一样，保留你在代码中和成员之间输入的空行。为 false 时这些空行会被删除，只由下面的规则添加空行。<a href="#blank-lines">示例</a>。</td></tr>
+    <tr><td><a href="#rule-blanklines-aroundclassbody"><code>blankLines.aroundClassBody</code></a></td><td><code>true</code></td><td>在类声明头之后和类的右花括号之前各保留一个空行。</td></tr>
+    <tr><td><a href="#rule-blanklines-betweenfields"><code>blankLines.betweenFields</code></a></td><td><code>false</code></td><td>像方法一样，在每个字段前后添加空行。为 false 时，字段之间不留空行，即使字段带有 JavaDoc 也是如此。</td></tr>
+    <tr><td><a href="#rule-blanklines-aroundfieldswithjavadoc"><code>blankLines.aroundFieldsWithJavadoc</code></a></td><td><code>false</code></td><td>与上游一样，在每个带 JavaDoc 的字段前后添加空行，即使 <code>betweenFields</code> 为 false。</td></tr>
+    <tr><td><a href="#rule-blanklines-aroundinterfacemethods"><code>blankLines.aroundInterfaceMethods</code></a></td><td><code>false</code></td><td>在接口或注解类型的每个方法前后添加空行。</td></tr>
+    <tr><td><a href="#rule-imports-groups"><code>imports.groups</code></a></td><td><code>[static, java, javax, org, com, "*"]</code></td><td>按顺序排列的导入分组。每一项可以是包名前缀（<code>java</code>、<code>com.example</code>）、表示所有静态导入的 <code>static</code>，或表示其余所有导入的 <code>"*"</code>。每个导入归入前缀匹配最长的分组；没有任何匹配的导入放在最后。<a href="#imports">示例</a>。</td></tr>
+    <tr><td><a href="#rule-imports-blanklinebetweengroups"><code>imports.blankLineBetweenGroups</code></a></td><td><code>true</code></td><td>在导入分组之间添加空行。</td></tr>
+    <tr><td><a href="#rule-javadoc-enabled"><code>javadoc.enabled</code></a></td><td><code>true</code></td><td>应用下面的 JavaDoc 配置项。为 false 时，JavaDoc 完全保持原样。<a href="#javadoc">示例</a>。</td></tr>
+    <tr><td><a href="#rule-javadoc-removeblanklinesindescription"><code>javadoc.removeBlankLinesInDescription</code></a></td><td><code>true</code></td><td>删除描述部分内的空行。为 false 时保留段落分隔（每处一个空行）。</td></tr>
+    <tr><td><a href="#rule-javadoc-blanklineafterdescription"><code>javadoc.blankLineAfterDescription</code></a></td><td><code>true</code></td><td>在描述与第一个标签之间保留一个空行。</td></tr>
+    <tr><td><a href="#rule-javadoc-blanklineafterparams"><code>javadoc.blankLineAfterParams</code></a></td><td><code>true</code></td><td>当后面还有其他标签时，在 <code>@param</code> 标签块之后保留一个空行。</td></tr>
+    <tr><td><a href="#rule-javadoc-blanklineafterreturn"><code>javadoc.blankLineAfterReturn</code></a></td><td><code>true</code></td><td>当后面还有其他标签时，在 <code>@return</code> 之后保留一个空行。</td></tr>
+    <tr><td><a href="#rule-javadoc-singlespaceaftertagname"><code>javadoc.singleSpaceAfterTagName</code></a></td><td><code>true</code></td><td><code>@param</code> 或 <code>@throws</code> 的名称与其描述之间恰好保留一个空格。</td></tr>
   </tbody>
 </table>
 <p>下面是一个包含所有配置项及其默认值的完整文件，可直接复制后修改：</p>
@@ -346,6 +359,993 @@ javadoc:
   blankLineAfterParams: true
   blankLineAfterReturn: true
   singleSpaceAfterTagName: true</code></pre>
+
+<!-- rules-reference:start -->
+<h3 id="reference">规则参考</h3>
+<p>每个配置项接受哪些值、有什么作用。示例是格式化器对所示输入的真实输出：每一列只设置这一个配置项，其他配置项都保持 Bowerbird 的默认值。</p>
+<div class="rule" id="rule-preset">
+<h4><code>preset</code></h4>
+<p>所有其他配置项的起点。<code>bowerbird</code> 是 Bowerbird 自己的风格；<code>palantir</code> 与上游 palantir-java-format 完全一致（已通过上游全部 226 个测试用例的验证）；<code>google</code> 是上游的 Google 风格。同一文件中的其他配置项会在预设的基础上进行修改，与 <code>preset</code> 在文件中的位置无关。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>bowerbird</code>、<code>palantir</code> 或 <code>google</code></td></tr><tr><th>默认值</th><td><code>bowerbird</code></td></tr></table>
+<p class="note">对比同一段输入在各个预设下的结果。</p>
+<details><summary>输入</summary><pre><code>package example;
+import java.util.List;
+import static java.util.Objects.requireNonNull;
+import com.example.Order;
+class Orders {
+    /** The open orders. */
+    private final List&lt;Order&gt; open = List.of();
+    private final int[] limits = {1, 2, 3};
+    int count(Order order) {
+        requireNonNull(order);
+        if (open.isEmpty()) return 0;
+        return open.size();
+    }
+}</code></pre></details>
+<div class="compare three">
+<div><div class="label yaml">preset: bowerbird</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import java.util.List;
+
+import com.example.Order;
+
+class Orders {
+
+    /** The open orders. */
+    private final List&lt;Order&gt; open = List.of();
+    private final int[] limits = { 1, 2, 3 };
+
+    int count(Order order) {
+        requireNonNull(order);
+        if(open.isEmpty())
+            return 0;
+        return open.size();
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">preset: palantir</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import com.example.Order;
+import java.util.List;
+
+class Orders {
+    /** The open orders. */
+    private final List&lt;Order&gt; open = List.of();
+
+    private final int[] limits = {1, 2, 3};
+
+    int count(Order order) {
+        requireNonNull(order);
+        if (open.isEmpty()) return 0;
+        return open.size();
+    }
+}</code></pre></div>
+<div><div class="label yaml">preset: google</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import com.example.Order;
+import java.util.List;
+
+class Orders {
+  /** The open orders. */
+  private final List&lt;Order&gt; open = List.of();
+
+  private final int[] limits = {1, 2, 3};
+
+  int count(Order order) {
+    requireNonNull(order);
+    if (open.isEmpty()) return 0;
+    return open.size();
+  }
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-linelength">
+<h4><code>lineLength</code></h4>
+<p>最大行长度。超出的行会被换行，过长的字符串字面量会被拆分。</p>
+<table class="rule-facts"><tr><th>取值</th><td>整数，至少为 40</td></tr><tr><th>默认值</th><td><code>120</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>120</code> · <code>google</code>: <code>100</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    void place() {
+        orderService.placeOrder(account, instrument, quantity, limitPrice, timeInForce);
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">lineLength: 120</div><pre><code>class Example {
+
+    void place() {
+        orderService.placeOrder(account, instrument, quantity, limitPrice, timeInForce);
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">lineLength: 80</div><pre><code>class Example {
+
+    void place() {
+        orderService.placeOrder(
+            account, instrument, quantity, limitPrice, timeInForce);
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-indent">
+<h4><code>indent</code></h4>
+<p>每级代码块缩进的空格数：类、方法、循环或 <code>if</code> 的主体。</p>
+<table class="rule-facts"><tr><th>取值</th><td>空格数（整数），至少为 1</td></tr><tr><th>默认值</th><td><code>4</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>4</code> · <code>google</code>: <code>2</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    void check(int x) {
+        if (x &gt; 0) {
+            run(x);
+        }
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">indent: 4</div><pre><code>class Example {
+
+    void check(int x) {
+        if(x &gt; 0) {
+            run(x);
+        }
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">indent: 2</div><pre><code>class Example {
+
+  void check(int x) {
+    if(x &gt; 0) {
+      run(x);
+    }
+  }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-continuationindent">
+<h4><code>continuationIndent</code></h4>
+<p>换行后的续行相对于其所属行的缩进空格数。</p>
+<table class="rule-facts"><tr><th>取值</th><td>空格数（整数），至少为 1</td></tr><tr><th>默认值</th><td><code>4</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>8</code> · <code>google</code>: <code>4</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    void place() {
+        OrderResult result = orderService.placeOrderWithAVeryLongName(firstAccountArgument, secondInstrumentArgument, third);
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">continuationIndent: 4</div><pre><code>class Example {
+
+    void place() {
+        OrderResult result =
+            orderService.placeOrderWithAVeryLongName(firstAccountArgument, secondInstrumentArgument, third);
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">continuationIndent: 8</div><pre><code>class Example {
+
+    void place() {
+        OrderResult result =
+                orderService.placeOrderWithAVeryLongName(firstAccountArgument, secondInstrumentArgument, third);
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-spaceaftercontrolkeyword">
+<h4><code>spaceAfterControlKeyword</code></h4>
+<p>在 <code>if</code>、<code>for</code>、<code>while</code>、<code>switch</code>、<code>try</code>、<code>catch</code> 或 <code>synchronized</code> 与其 <code>(</code> 之间加一个空格。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>false</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    void run(int[] values) {
+        for (int value : values) {
+            if (value &gt; 0) {
+                process(value);
+            }
+        }
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">spaceAfterControlKeyword: false</div><pre><code>class Example {
+
+    void run(int[] values) {
+        for(int value : values) {
+            if(value &gt; 0) {
+                process(value);
+            }
+        }
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">spaceAfterControlKeyword: true</div><pre><code>class Example {
+
+    void run(int[] values) {
+        for (int value : values) {
+            if (value &gt; 0) {
+                process(value);
+            }
+        }
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-arrayinitializerbracespaces">
+<h4><code>arrayInitializerBraceSpaces</code></h4>
+<p>在数组初始化器（包括注解参数中的数组）的大括号内侧加空格：<code>{ 1, 2 }</code> 而不是 <code>{1, 2}</code>。空的大括号仍为 <code>{}</code>。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    int[] numbers = new int[] {1, 2, 3};
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void run() {}
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">arrayInitializerBraceSpaces: true</div><pre><code>class Example {
+
+    int[] numbers = new int[] { 1, 2, 3 };
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    void run() {}
+
+}</code></pre></div>
+<div><div class="label yaml">arrayInitializerBraceSpaces: false</div><pre><code>class Example {
+
+    int[] numbers = new int[] {1, 2, 3};
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void run() {}
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-closingparenonownline">
+<h4><code>closingParenOnOwnLine</code></h4>
+<p>当参数或实参逐行换行时，<code>)</code> 单独占一行。为 false 时，<code>)</code> 留在最后一行，作为最后一个实参传入的 lambda 也会留在调用所在的行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    void run() {
+        service.submit(builder.withAccount(firstAccountArgument).withInstrument(secondInstrumentArgument).build(), options, callback);
+        executor.execute(account, () -&gt; {
+            run();
+        });
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">closingParenOnOwnLine: true</div><pre><code>class Example {
+
+    void run() {
+        service.submit(
+            builder.withAccount(firstAccountArgument)
+                .withInstrument(secondInstrumentArgument)
+                .build(),
+            options,
+            callback
+        );
+        executor.execute(
+            account,
+            () -&gt; {
+                run();
+            }
+        );
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">closingParenOnOwnLine: false</div><pre><code>class Example {
+
+    void run() {
+        service.submit(
+            builder.withAccount(firstAccountArgument)
+                .withInstrument(secondInstrumentArgument)
+                .build(),
+            options,
+            callback);
+        executor.execute(account, () -&gt; {
+            run();
+        });
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-tryresourcesonownlines">
+<h4><code>tryResourcesOnOwnLines</code></h4>
+<p>包含多个资源的 <code>try</code> 会把每个资源放在单独一行，<code>(</code> 和 <code>)</code> 也各占一行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    void run() throws Exception {
+        try (InputStream first = openTheFirstStream(account, instrument); InputStream second = openTheSecondStream(account)) {
+            run();
+        }
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">tryResourcesOnOwnLines: true</div><pre><code>class Example {
+
+    void run() throws Exception {
+        try(
+            InputStream first = openTheFirstStream(account, instrument);
+            InputStream second = openTheSecondStream(account)
+        ) {
+            run();
+        }
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">tryResourcesOnOwnLines: false</div><pre><code>class Example {
+
+    void run() throws Exception {
+        try(InputStream first = openTheFirstStream(account, instrument);
+            InputStream second = openTheSecondStream(account)) {
+            run();
+        }
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-bodywithoutbracesonownline">
+<h4><code>bodyWithoutBracesOnOwnLine</code></h4>
+<p>没有大括号的 <code>if</code>、<code>for</code> 或 <code>while</code> 的主体总是单独占一行。为 false 时，如果放得下，可以留在同一行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    int check(int x) {
+        if (x &lt; 0) return 0;
+        return x;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">bodyWithoutBracesOnOwnLine: true</div><pre><code>class Example {
+
+    int check(int x) {
+        if(x &lt; 0)
+            return 0;
+        return x;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">bodyWithoutBracesOnOwnLine: false</div><pre><code>class Example {
+
+    int check(int x) {
+        if(x &lt; 0) return 0;
+        return x;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-blanklines-keeptyped">
+<h4><code>blankLines.keepTyped</code></h4>
+<p>像上游一样保留你在代码中和成员之间输入的空行（连续空行最多保留一行）。为 false 时会删除这些空行，只有其他 <code>blankLines</code> 配置项会添加空行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>false</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    private int first;
+
+    private int second;
+    void run() {
+
+        int a = 1;
+
+        int b = 2;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;keepTyped: false</div><pre><code>class Example {
+
+    private int first;
+    private int second;
+
+    void run() {
+        int a = 1;
+        int b = 2;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;keepTyped: true</div><pre><code>class Example {
+
+    private int first;
+
+    private int second;
+
+    void run() {
+
+        int a = 1;
+
+        int b = 2;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-blanklines-aroundclassbody">
+<h4><code>blankLines.aroundClassBody</code></h4>
+<p>在类、接口或枚举的声明头之后和右大括号之前各加一个空行。枚举和匿名类在右大括号之前不加空行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    private int value;
+    int value() {
+        return value;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundClassBody: true</div><pre><code>class Example {
+
+    private int value;
+
+    int value() {
+        return value;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundClassBody: false</div><pre><code>class Example {
+    private int value;
+
+    int value() {
+        return value;
+    }
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-blanklines-betweenfields">
+<h4><code>blankLines.betweenFields</code></h4>
+<p>像方法一样，在每个字段前后加空行。为 false 时，字段之间不加空行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>false</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    private int first;
+    private int second;
+    private int third;
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;betweenFields: false</div><pre><code>class Example {
+
+    private int first;
+    private int second;
+    private int third;
+
+}</code></pre></div>
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;betweenFields: true</div><pre><code>class Example {
+
+    private int first;
+
+    private int second;
+
+    private int third;
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-blanklines-aroundfieldswithjavadoc">
+<h4><code>blankLines.aroundFieldsWithJavadoc</code></h4>
+<p>即使 <code>betweenFields</code> 为 false，也在带 JavaDoc 的字段前后加空行。上游就是这样做的。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>false</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    private int first;
+    /** The second value. */
+    private int second;
+    private int third;
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundFieldsWithJavadoc: false</div><pre><code>class Example {
+
+    private int first;
+    /** The second value. */
+    private int second;
+    private int third;
+
+}</code></pre></div>
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundFieldsWithJavadoc: true</div><pre><code>class Example {
+
+    private int first;
+
+    /** The second value. */
+    private int second;
+
+    private int third;
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-blanklines-aroundinterfacemethods">
+<h4><code>blankLines.aroundInterfaceMethods</code></h4>
+<p>在接口或注解类型的每个方法前后加空行。类中的方法总是会有空行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>false</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<details><summary>输入</summary><pre><code>interface Repository {
+    void save();
+    void delete();
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundInterfaceMethods: false</div><pre><code>interface Repository {
+
+    void save();
+    void delete();
+
+}</code></pre></div>
+<div><div class="label yaml">blankLines:<br>&nbsp;&nbsp;aroundInterfaceMethods: true</div><pre><code>interface Repository {
+
+    void save();
+
+    void delete();
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-imports-groups">
+<h4><code>imports.groups</code></h4>
+<p>导入分组及其顺序。像 <code>java</code> 或 <code>com.example</code> 这样的包前缀会匹配该包及其所有子包；一个导入会被放进前缀匹配最长的分组。<code>static</code> 包含所有静态导入，<code>"*"</code> 包含其他分组都不匹配的导入；不匹配任何分组的导入放在最后。分组内的导入按名称排序。</p>
+<table class="rule-facts"><tr><th>取值</th><td>由包前缀、<code>static</code> 和 <code>"*"</code> 组成的列表</td></tr><tr><th>默认值</th><td><code>[static, java, javax, org, com, *]</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>[static, *]</code> · <code>google</code>: <code>[static, *]</code></td></tr></table>
+<details><summary>输入</summary><pre><code>package example;
+import net.other.Thing;
+import com.example.trading.Order;
+import java.util.List;
+import static java.util.Objects.requireNonNull;
+import org.slf4j.Logger;
+import com.google.common.collect.ImmutableList;
+class Example {
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+    void check() {
+        requireNonNull(order);
+    }
+}</code></pre></details>
+<div class="compare three">
+<div><div class="label yaml">imports:<br>&nbsp;&nbsp;groups: [static, java, javax, org, com, &quot;*&quot;]</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import java.util.List;
+
+import org.slf4j.Logger;
+
+import com.example.trading.Order;
+import com.google.common.collect.ImmutableList;
+
+import net.other.Thing;
+
+class Example {
+
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+
+    void check() {
+        requireNonNull(order);
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">imports:<br>&nbsp;&nbsp;groups: [static, &quot;*&quot;]</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import com.example.trading.Order;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import net.other.Thing;
+import org.slf4j.Logger;
+
+class Example {
+
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+
+    void check() {
+        requireNonNull(order);
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">imports:<br>&nbsp;&nbsp;groups: [java, com.example, &quot;*&quot;, static]</div><pre><code>package example;
+
+import java.util.List;
+
+import com.example.trading.Order;
+
+import com.google.common.collect.ImmutableList;
+import net.other.Thing;
+import org.slf4j.Logger;
+
+import static java.util.Objects.requireNonNull;
+
+class Example {
+
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+
+    void check() {
+        requireNonNull(order);
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-imports-blanklinebetweengroups">
+<h4><code>imports.blankLineBetweenGroups</code></h4>
+<p>在导入分组之间加一个空行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<details><summary>输入</summary><pre><code>package example;
+import net.other.Thing;
+import com.example.trading.Order;
+import java.util.List;
+import static java.util.Objects.requireNonNull;
+import org.slf4j.Logger;
+import com.google.common.collect.ImmutableList;
+class Example {
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+    void check() {
+        requireNonNull(order);
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">imports:<br>&nbsp;&nbsp;blankLineBetweenGroups: true</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+
+import java.util.List;
+
+import org.slf4j.Logger;
+
+import com.example.trading.Order;
+import com.google.common.collect.ImmutableList;
+
+import net.other.Thing;
+
+class Example {
+
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+
+    void check() {
+        requireNonNull(order);
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">imports:<br>&nbsp;&nbsp;blankLineBetweenGroups: false</div><pre><code>package example;
+
+import static java.util.Objects.requireNonNull;
+import java.util.List;
+import org.slf4j.Logger;
+import com.example.trading.Order;
+import com.google.common.collect.ImmutableList;
+import net.other.Thing;
+
+class Example {
+
+    Thing thing;
+    Order order;
+    List&lt;Logger&gt; loggers = ImmutableList.of();
+
+    void check() {
+        requireNonNull(order);
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-enabled">
+<h4><code>javadoc.enabled</code></h4>
+<p>应用下面的 <code>javadoc</code> 配置项。为 false 时，JavaDoc 会原样保留。单行 JavaDoc 和包含 <code>&lt;pre&gt;</code> 的 JavaDoc 永远不会被修改。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>false</code> · <code>google</code>: <code>false</code></td></tr></table>
+<details><summary>输入</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;enabled: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;enabled: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-removeblanklinesindescription">
+<h4><code>javadoc.removeBlankLinesInDescription</code></h4>
+<p>删除描述中的空行。为 false 时保留段落之间的分隔，每处一个空行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<p class="note">在 <code>palantir</code> 和 <code>google</code> 预设中，<code>javadoc.enabled</code> 为 false，因此除非你启用它，否则此配置项在这些预设中不起作用。</p>
+<details><summary>输入</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;removeBlankLinesInDescription: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;removeBlankLinesInDescription: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-blanklineafterdescription">
+<h4><code>javadoc.blankLineAfterDescription</code></h4>
+<p>在描述和第一个标签之间加一个空行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<p class="note">在 <code>palantir</code> 和 <code>google</code> 预设中，<code>javadoc.enabled</code> 为 false，因此除非你启用它，否则此配置项在这些预设中不起作用。</p>
+<details><summary>输入</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterDescription: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterDescription: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-blanklineafterparams">
+<h4><code>javadoc.blankLineAfterParams</code></h4>
+<p>当后面还有其他标签时，在 <code>@param</code> 标签块之后加一个空行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<p class="note">在 <code>palantir</code> 和 <code>google</code> 预设中，<code>javadoc.enabled</code> 为 false，因此除非你启用它，否则此配置项在这些预设中不起作用。</p>
+<details><summary>输入</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterParams: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterParams: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-blanklineafterreturn">
+<h4><code>javadoc.blankLineAfterReturn</code></h4>
+<p>当后面还有其他标签时，在 <code>@return</code> 之后加一个空行。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<p class="note">在 <code>palantir</code> 和 <code>google</code> 预设中，<code>javadoc.enabled</code> 为 false，因此除非你启用它，否则此配置项在这些预设中不起作用。</p>
+<details><summary>输入</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterReturn: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;blankLineAfterReturn: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<div class="rule" id="rule-javadoc-singlespaceaftertagname">
+<h4><code>javadoc.singleSpaceAfterTagName</code></h4>
+<p>在 <code>@param</code> 或 <code>@throws</code> 的名称与其描述之间，以及其他标签之后，只保留一个空格。</p>
+<table class="rule-facts"><tr><th>取值</th><td><code>true</code> 或 <code>false</code></td></tr><tr><th>默认值</th><td><code>true</code></td></tr><tr><th>各预设中的值</th><td><code>palantir</code>: <code>true</code> · <code>google</code>: <code>true</code></td></tr></table>
+<p class="note">在 <code>palantir</code> 和 <code>google</code> 预设中，<code>javadoc.enabled</code> 为 false，因此除非你启用它，否则此配置项在这些预设中不起作用。</p>
+<details><summary>输入</summary><pre><code>class Example {
+    /**
+     * Places an order.
+     *
+     * Checks the limits first.
+     * @param account   the account
+     * @param order the order
+     * @return the result
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+}</code></pre></details>
+<div class="compare">
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;singleSpaceAfterTagName: true</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+<div><div class="label yaml">javadoc:<br>&nbsp;&nbsp;singleSpaceAfterTagName: false</div><pre><code>class Example {
+
+    /**
+     * Places an order.
+     * Checks the limits first.
+     *
+     * @param account   the account
+     * @param order the order
+     *
+     * @return the result
+     *
+     * @throws IllegalStateException   when refused
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+}</code></pre></div>
+</div></div>
+<!-- rules-reference:end -->
 
 <h2 id="rules">默认风格</h2>
 <p>没有 <code>bowerbird.yml</code> 时，Bowerbird 按如下方式格式化。每条规则都是一个可以修改的<a href="#settings">配置项</a>，括号中注明了对应的配置项。与上游 palantir-java-format 相比：</p>

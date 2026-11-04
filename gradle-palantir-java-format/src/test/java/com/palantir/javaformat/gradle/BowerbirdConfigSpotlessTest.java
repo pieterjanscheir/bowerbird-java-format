@@ -22,8 +22,8 @@ import java.io.File;
 import org.junit.jupiter.api.Test;
 
 /**
- * Bowerbird: a project configures the rules with a {@code bowerbird.yml} in a folder that it adds to the
- * {@code palantirJavaFormat} dependencies, the way the documentation describes.
+ * Bowerbird: a project configures the rules with a {@code bowerbird.yml} that it adds to the {@code palantirJavaFormat}
+ * dependencies, the way the documentation describes.
  */
 @GradlePluginTests
 @DisabledConfigurationCache
@@ -40,7 +40,7 @@ class BowerbirdConfigSpotlessTest {
     @Test
     void spotless_formats_with_the_rules_in_bowerbird_yml(GradleInvoker gradle, RootProject project) {
         setUpProject(gradle, project);
-        project.file("config/bowerbird/bowerbird.yml").overwrite("""
+        project.file("config/bowerbird.yml").overwrite("""
             indent: 2
             spaceAfterControlKeyword: true
             blankLines:
@@ -66,12 +66,12 @@ class BowerbirdConfigSpotlessTest {
     @Test
     void editing_bowerbird_yml_changes_the_next_format(GradleInvoker gradle, RootProject project) {
         setUpProject(gradle, project);
-        project.file("config/bowerbird/bowerbird.yml").overwrite("spaceAfterControlKeyword: true\n");
+        project.file("config/bowerbird.yml").overwrite("spaceAfterControlKeyword: true\n");
         project.file("src/main/java/Main.java").overwrite(UNFORMATTED);
         gradle.withArgs("spotlessApply").buildsSuccessfully();
         project.file("src/main/java/Main.java").assertThat().content().contains("if (x > 0)");
 
-        project.file("config/bowerbird/bowerbird.yml").overwrite("spaceAfterControlKeyword: false\n");
+        project.file("config/bowerbird.yml").overwrite("spaceAfterControlKeyword: false\n");
         gradle.withArgs("spotlessApply").buildsSuccessfully();
 
         project.file("src/main/java/Main.java").assertThat().content().contains("if(x > 0)");
@@ -80,7 +80,7 @@ class BowerbirdConfigSpotlessTest {
     @Test
     void an_invalid_bowerbird_yml_fails_with_its_error(GradleInvoker gradle, RootProject project) {
         setUpProject(gradle, project);
-        project.file("config/bowerbird/bowerbird.yml").overwrite("indnet: 2\n");
+        project.file("config/bowerbird.yml").overwrite("indnet: 2\n");
         project.file("src/main/java/Main.java").overwrite(UNFORMATTED);
 
         gradle.withArgs("spotlessApply")
@@ -124,7 +124,7 @@ class BowerbirdConfigSpotlessTest {
         project.buildGradle().append("""
             dependencies {
                 palantirJavaFormat files(file("%s").text.split(':'))
-                palantirJavaFormat files('config/bowerbird')
+                palantirJavaFormat files('config/bowerbird.yml')
             }
             """, CLASSPATH_FILE);
     }
