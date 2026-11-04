@@ -17,6 +17,7 @@
 package com.palantir.javaformat.java.java21;
 
 import com.palantir.javaformat.OpsBuilder;
+import com.palantir.javaformat.java.BowerbirdRules;
 import com.palantir.javaformat.java.java14.Java14InputAstVisitor;
 import com.sun.source.tree.CaseTree;
 import com.sun.source.tree.ConstantCaseLabelTree;
@@ -25,6 +26,7 @@ import com.sun.source.tree.DefaultCaseLabelTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.PatternCaseLabelTree;
 import com.sun.source.tree.PatternTree;
+import javax.annotation.Nullable;
 import javax.lang.model.element.Name;
 
 /**
@@ -37,9 +39,9 @@ public class Java21InputAstVisitor extends Java14InputAstVisitor {
         super(builder, indentMultiplier);
     }
 
-    /** Bowerbird: see {@link JavaInputAstVisitor#JavaInputAstVisitor(OpsBuilder, int, boolean)}. */
-    public Java21InputAstVisitor(OpsBuilder builder, int indentMultiplier, boolean bowerbird) {
-        super(builder, indentMultiplier, bowerbird);
+    /** Bowerbird: see {@link JavaInputAstVisitor#JavaInputAstVisitor(OpsBuilder, int, BowerbirdRules)}. */
+    public Java21InputAstVisitor(OpsBuilder builder, int indentMultiplier, @Nullable BowerbirdRules rules) {
+        super(builder, indentMultiplier, rules);
     }
 
     @Override

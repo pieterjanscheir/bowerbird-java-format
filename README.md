@@ -7,18 +7,36 @@
 _A Java formatter that arranges your code the way a bowerbird arranges its nest: carefully, and always the same way._
 
 Bowerbird is a modified version of [palantir-java-format](https://github.com/palantir/palantir-java-format)
-(itself based on [google-java-format](https://github.com/google/google-java-format)). It adds a `BOWERBIRD`
-style whose output matches IntelliJ IDEA's formatter for the target code style.
+(itself based on [google-java-format](https://github.com/google/google-java-format)). Unlike most formatters it
+isn't one fixed style: every rule is a setting in a `bowerbird.yml`, so a team can choose its own layout. Without
+one you get Bowerbird's default style, whose output matches IntelliJ IDEA's formatter for the target code style.
 It is available under the same [Apache 2.0 License](./LICENSE). See [NOTICE](./NOTICE) for attribution.
 
-**Documentation: <https://pieterjanscheir.github.io/bowerbird-java-format/>**. It covers setup, every formatting
-rule with before/after examples, and the contributor workflow. The page is built from [docs/index.html](./docs/index.html).
+**Documentation: <https://pieterjanscheir.github.io/bowerbird-java-format/>** ([中文](https://pieterjanscheir.github.io/bowerbird-java-format/zh/)).
+It covers setup, every setting, the default style with before/after examples, and the contributor workflow.
+The pages are built from [docs/index.html](./docs/index.html) and [docs/zh/index.html](./docs/zh/index.html).
 The upstream documentation is kept in [docs/upstream-README.md](./docs/upstream-README.md).
 
-## What Bowerbird changes
+## Configuring the rules
 
-`BOWERBIRD` is the default style, so the Gradle and IntelliJ plugins use it without extra settings. Upstream's
-`PALANTIR`, `GOOGLE` and `AOSP` styles are unchanged. In short:
+Create a `bowerbird.yml` and add the file to the `palantirJavaFormat` dependencies
+(see [Installing](#installing)). List only the settings you want to change:
+
+```yaml
+# config/bowerbird.yml
+preset: palantir          # start from upstream palantir-java-format (or: bowerbird, the default; google)
+indent: 2
+continuationIndent: 4
+```
+
+That example is Palantir's style with 2-space indentation, which upstream [can't do](https://github.com/palantir/palantir-java-format/issues/951).
+`preset: palantir` is tested against every upstream test case. Gradle, Spotless and IntelliJ all read the same file,
+and the command line takes `--config bowerbird.yml`. An unknown setting or a wrong type stops formatting with a
+message that names it. See [all settings](https://pieterjanscheir.github.io/bowerbird-java-format/#settings).
+
+## The default style
+
+Without a `bowerbird.yml`, Bowerbird changes these things compared to upstream; each is a setting:
 
 - No space between a control keyword and `(`: `if(`, `for(`, `while(`, `switch(`, `try(`, `catch(`, `synchronized(`.
 - Import groups: static, `java`, `javax`, `org`, `com`, everything else, with a blank line between groups.
@@ -27,7 +45,7 @@ The upstream documentation is kept in [docs/upstream-README.md](./docs/upstream-
 - Blank lines in code removed; fixed blank-line rules for class bodies, fields and methods.
 - JavaDoc tag blocks separated by blank lines, and JavaDoc never re-wrapped.
 
-See [Formatting rules](https://pieterjanscheir.github.io/bowerbird-java-format/#rules) for the full list and examples.
+See [Default style](https://pieterjanscheir.github.io/bowerbird-java-format/#rules) for examples.
 
 ## Installing
 
@@ -60,11 +78,12 @@ repositories {
 
 dependencies {
     palantirJavaFormat 'io.github.pieterjanscheir.bowerbird:bowerbird-java-format:<bowerbird version>'
+    palantirJavaFormat files('config/bowerbird.yml') // optional: your settings
 }
 ```
 
 Do not enable the native formatter (`palantir.native.formatter`): it downloads Palantir's precompiled
-binary, which does not contain Bowerbird's rules. For IntelliJ, install the upstream
+binary, which does not contain Bowerbird's rules and can't read `bowerbird.yml`. For IntelliJ, install the upstream
 [palantir-java-format plugin](https://plugins.jetbrains.com/plugin/13180-palantir-java-format); it picks up the
 formatter version the Gradle plugin resolves. See [IntelliJ](https://pieterjanscheir.github.io/bowerbird-java-format/#intellij).
 
@@ -88,13 +107,17 @@ It fails when the build changes tracked files.
 1. Add a `YourRule.input` and `YourRule.output` pair to
    `palantir-java-format/src/test/resources/com/palantir/javaformat/java/bowerbird-testdata/`.
    `BowerbirdIntegrationTest` picks them up.
-2. Change the formatter, usually in `JavaInputAstVisitor.java`, and only for `Style.BOWERBIRD`,
-   so upstream styles and their tests are unaffected.
-3. Run the tests. `./gradlew test -Drecreate=true` regenerates expected outputs, so review that diff carefully.
-4. Check the output against IntelliJ's formatter with the target code style: IntelliJ should leave it unchanged.
+2. Add the setting to `BowerbirdRules` (with its default, and its value in the `palantir` preset) and to the
+   table in `BowerbirdConfig`.
+3. Change the formatter, usually in `JavaInputAstVisitor.java`, behind `rule(BowerbirdRules::yourSetting)`, so
+   upstream styles and their tests are unaffected. `BowerbirdPalantirPresetTest` checks that `preset: palantir`
+   still matches upstream.
+4. To test a non-default value, add a `YourRule.yml` next to the input and output files.
+5. Run the tests. `./gradlew test -Drecreate=true` regenerates expected outputs, so review that diff carefully.
+6. Check the output against IntelliJ's formatter with the target code style: IntelliJ should leave it unchanged.
 
 Keep one rule per commit, so upstream merge conflicts are easy to trace. When a rule changes, update
-[docs/index.html](./docs/index.html) too.
+[docs/index.html](./docs/index.html) and [docs/zh/index.html](./docs/zh/index.html) too.
 
 ## Staying up to date with upstream
 

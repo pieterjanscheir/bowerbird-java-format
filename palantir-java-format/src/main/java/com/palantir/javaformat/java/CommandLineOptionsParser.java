@@ -98,6 +98,11 @@ final class CommandLineOptionsParser {
                 case "-palantir":
                     optionsBuilder.palantirStyle(true);
                     break;
+                case "--config":
+                case "-config":
+                    // Bowerbird: format with the rules in this bowerbird.yml.
+                    optionsBuilder.bowerbirdConfig(getValue(flag, it, value));
+                    break;
                 case "--version":
                 case "-version":
                 case "-v":

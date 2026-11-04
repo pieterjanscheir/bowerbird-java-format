@@ -1,0 +1,58 @@
+package example;
+import java.util.List;
+class BlankLines {
+    private int first;
+
+
+    /** The second field. */
+    private int second;
+    private final List<String> names = List.of();
+    BlankLines() {}
+    void run() {
+
+        int a = 1;
+
+        // explains b
+        int b = 2;
+
+
+        if(a > b) {
+
+            a = b;
+
+        }
+
+    }
+    void other() {
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {}
+        };
+    }
+
+
+    static class Nested {
+        int value;
+    }
+}
+
+interface Repository {
+
+    String NAME = "repo";
+
+    void save();
+
+    void delete();
+}
+
+enum Side {
+
+    BUY,
+
+    SELL;
+
+    private int code;
+    int code() {
+        return code;
+    }
+}

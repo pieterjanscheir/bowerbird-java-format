@@ -311,33 +311,54 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
      * @param builder the {@link OpsBuilder}
      */
     public JavaInputAstVisitor(OpsBuilder builder, int indentMultiplier) {
-        this(builder, indentMultiplier, false);
+        this(builder, indentMultiplier, null);
     }
 
     /**
-     * Bowerbird: creates a visitor that applies the Bowerbird rules when {@code bowerbird} is true. With
-     * {@code false} it behaves exactly like upstream palantir-java-format.
+     * Bowerbird: creates a visitor that applies {@code rules}. With {@code null} it behaves exactly like upstream
+     * palantir-java-format.
      */
-    public JavaInputAstVisitor(OpsBuilder builder, int indentMultiplier, boolean bowerbird) {
+    public JavaInputAstVisitor(OpsBuilder builder, int indentMultiplier, @Nullable BowerbirdRules rules) {
         this.builder = builder;
         this.indentMultiplier = indentMultiplier;
-        this.bowerbird = bowerbird;
-        minusTwo = Indent.Const.make(-2, indentMultiplier);
-        plusTwo = Indent.Const.make(+2, indentMultiplier);
-        // Bowerbird: continuation indent is one indent unit (4 spaces) instead of two (8 spaces).
-        minusFour = Indent.Const.make(bowerbird ? -2 : -4, indentMultiplier);
-        plusFour = Indent.Const.make(bowerbird ? +2 : +4, indentMultiplier);
+        this.rules = rules;
+        if (rules != null) {
+            // Bowerbird: indents are configured in spaces, independent of the style's indent multiplier.
+            minusTwo = Indent.Const.make(-rules.indent(), 1);
+            plusTwo = Indent.Const.make(+rules.indent(), 1);
+            minusFour = Indent.Const.make(-rules.continuationIndent(), 1);
+            plusFour = Indent.Const.make(+rules.continuationIndent(), 1);
+        } else {
+            minusTwo = Indent.Const.make(-2, indentMultiplier);
+            plusTwo = Indent.Const.make(+2, indentMultiplier);
+            minusFour = Indent.Const.make(-4, indentMultiplier);
+            plusFour = Indent.Const.make(+4, indentMultiplier);
+        }
     }
 
-    /** Bowerbird: true when the Bowerbird rules apply. */
-    protected final boolean bowerbird;
+    /** Bowerbird: the rules to apply, or {@code null} for upstream behaviour. */
+    @Nullable
+    private final BowerbirdRules rules;
+
+    /** Bowerbird: true when Bowerbird rules apply at all. */
+    protected final boolean bowerbird() {
+        return rules != null;
+    }
+
+    /** Bowerbird: true when Bowerbird rules apply and {@code rule} is on. */
+    protected final boolean rule(java.util.function.Predicate<BowerbirdRules> rule) {
+        return rules != null && rule.test(rules);
+    }
 
     /**
-     * Bowerbird: blank lines typed in the input are kept upstream, but removed by Bowerbird. Used everywhere except
-     * imports, where blank lines separate the import groups.
+     * Bowerbird: blank lines typed in the input are kept upstream, and removed by Bowerbird unless
+     * {@code blankLines.keepTyped} is on. Used everywhere except imports, where blank lines separate the import
+     * groups.
      */
     protected final BlankLineWanted preserveBlankLine() {
-        return bowerbird ? BlankLineWanted.NO : BlankLineWanted.PRESERVE;
+        return bowerbird() && !rule(BowerbirdRules::keepTypedBlankLines)
+                ? BlankLineWanted.NO
+                : BlankLineWanted.PRESERVE;
     }
 
     /**
@@ -345,22 +366,26 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
      * construct, whenever the enclosing level breaks.
      */
     protected final void closingParenBreak() {
-        if (bowerbird) {
+        if (rule(BowerbirdRules::closingParenOnOwnLine)) {
             builder.breakOp(FillMode.UNIFIED, "", minusFour);
         }
     }
 
     /** Bowerbird: one blank line after a class header and before a class's closing brace. */
     protected final BlankLineWanted classBodyEdgeBlankLine(BlankLineWanted upstream) {
-        return bowerbird ? BlankLineWanted.YES : upstream;
+        if (rule(BowerbirdRules::blankLinesAroundClassBody)) {
+            return BlankLineWanted.YES;
+        }
+        // Without the rule, the header edge (PRESERVE upstream) follows blankLines.keepTyped.
+        return upstream == PRESERVE ? preserveBlankLine() : upstream;
     }
 
     /**
-     * Bowerbird: the space between a control keyword and its opening parenthesis. Bowerbird writes {@code if(x)};
-     * upstream writes {@code if (x)}.
+     * Bowerbird: the space between a control keyword and its opening parenthesis: {@code if (x)} upstream,
+     * {@code if(x)} unless {@code spaceAfterControlKeyword} is on.
      */
     protected final void spaceAfterControlKeyword() {
-        if (!bowerbird) {
+        if (!bowerbird() || rule(BowerbirdRules::spaceAfterControlKeyword)) {
             builder.space();
         }
     }
@@ -588,7 +613,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             tokenBreakTrailingComment("{", plusTwo);
             boolean hasTrailingComma = hasTrailingToken(builder.getInput(), expressions, ",");
             // Bowerbird: a space inside the braces when the initializer fits on one line: { 1, 2, 3 }
-            String insideBraces = bowerbird ? " " : "";
+            String insideBraces = rule(BowerbirdRules::arrayInitializerBraceSpaces) ? " " : "";
             builder.breakOp(hasTrailingComma ? FillMode.FORCED : FillMode.UNIFIED, insideBraces, ZERO);
             if (allowFilledElementsOnOwnLine) {
                 builder.open(ZERO);
@@ -1978,7 +2003,8 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         if (!node.getResources().isEmpty()) {
             token("(");
             builder.open(node.getResources().size() > 1 ? plusFour : ZERO);
-            boolean resourcesOnOwnLines = bowerbird && node.getResources().size() > 1;
+            boolean resourcesOnOwnLines = rule(BowerbirdRules::tryResourcesOnOwnLines)
+                    && node.getResources().size() > 1;
             if (resourcesOnOwnLines) {
                 // Bowerbird: several resources go one per line between '(' and ')' on their own lines.
                 builder.forcedBreak();
@@ -2234,7 +2260,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 break;
             default:
                 builder.open(plusTwo);
-                if (bowerbird) {
+                if (rule(BowerbirdRules::bodyWithoutBracesOnOwnLine)) {
                     // Bowerbird: a body without braces always goes on its own line: if(x)\n    return;
                     builder.forcedBreak();
                 } else {
@@ -2928,7 +2954,8 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
         }
         // don't break after the first element if it is every small, unless the
         // chain starts with another expression
-        int minLength = indentMultiplier * 4;
+        // Bowerbird: twice the block indent, which is what indentMultiplier * 4 is for every upstream style.
+        int minLength = rules != null ? 2 * rules.indent() : indentMultiplier * 4;
         int length = needDot0 ? minLength : 0;
         for (ExpressionTree e : items) {
             if (needDot) {
@@ -3275,7 +3302,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                     builder.close();
                     first = false;
                 }
-                if (bowerbird) {
+                if (rule(BowerbirdRules::closingParenOnOwnLine)) {
                     // Bowerbird: tabular arguments always span lines, so ')' goes on its own line.
                     builder.breakOp(FillMode.FORCED, "", minusFour);
                 }
@@ -3856,27 +3883,33 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
             builder.open(plusTwo);
             boolean first = first0.isYes();
             boolean lastOneGotBlankLineBefore = false;
+            boolean lastOneWasField = false;
             PeekingIterator<Tree> it = Iterators.peekingIterator(bodyDeclarations.iterator());
             while (it.hasNext()) {
                 Tree bodyDeclaration = it.next();
                 dropEmptyDeclarations();
                 builder.forcedBreak();
-                boolean thisOneGetsBlankLineBefore = bowerbird
+                boolean thisOneGetsBlankLineBefore = bowerbird()
                         ? bowerbirdBlankLineAround(bodyDeclaration)
                         : !(bodyDeclaration instanceof VariableTree) || hasJavaDoc(bodyDeclaration);
                 if (first) {
                     if (braces.isYes()) {
                         builder.blankLineWanted(classBodyEdgeBlankLine(PRESERVE));
-                    } else if (bowerbird) {
+                    } else if (bowerbird() && !rule(BowerbirdRules::keepTypedBlankLines)) {
                         // Bowerbird: enum members after the constants follow the normal member rule.
-                        builder.blankLineWanted(thisOneGetsBlankLineBefore ? YES : BlankLineWanted.NO);
+                        builder.blankLineWanted(thisOneGetsBlankLineBefore ? YES : preserveBlankLine());
                     } else {
                         builder.blankLineWanted(PRESERVE);
                     }
                 } else if (!first && (thisOneGetsBlankLineBefore || lastOneGotBlankLineBefore)) {
                     builder.blankLineWanted(YES);
-                } else if (bowerbird) {
+                } else if (bowerbird() && !rule(BowerbirdRules::keepTypedBlankLines)) {
+                    // Bowerbird: no blank line between members.
                     builder.blankLineWanted(BlankLineWanted.NO);
+                } else if (bowerbird() && !lastOneWasField) {
+                    // Bowerbird: with keepTyped, keep a typed blank line. After a field, upstream's conditional blank
+                    // line (added when the field's annotations wrap) already keeps it, and must not be overridden.
+                    builder.blankLineWanted(PRESERVE);
                 }
                 markForPartialFormat();
 
@@ -3891,6 +3924,7 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
                 }
                 first = false;
                 lastOneGotBlankLineBefore = thisOneGetsBlankLineBefore;
+                lastOneWasField = bodyDeclaration instanceof VariableTree;
             }
             dropEmptyDeclarations();
             builder.forcedBreak();
@@ -3908,15 +3942,17 @@ public class JavaInputAstVisitor extends TreePathScanner<Void, Void> {
     }
 
     /**
-     * Bowerbird: whether a class member gets a blank line before and after it. Fields get none (also with JavaDoc);
-     * methods get one, except in interfaces; nested types and initializers always get one.
+     * Bowerbird: whether a class member gets a blank line before and after it. Fields follow
+     * {@code blankLines.betweenFields} and {@code blankLines.aroundFieldsWithJavadoc}, interface methods {@code blankLines.aroundInterfaceMethods};
+     * other methods, nested types and initializers always get one.
      */
     private boolean bowerbirdBlankLineAround(Tree bodyDeclaration) {
         if (bodyDeclaration instanceof VariableTree) {
-            return false;
+            return rule(BowerbirdRules::blankLinesBetweenFields)
+                    || (rule(BowerbirdRules::blankLinesAroundFieldsWithJavadoc) && hasJavaDoc(bodyDeclaration));
         }
         if (bodyDeclaration instanceof MethodTree && isInInterface()) {
-            return false;
+            return rule(BowerbirdRules::blankLinesAroundInterfaceMethods);
         }
         return true;
     }

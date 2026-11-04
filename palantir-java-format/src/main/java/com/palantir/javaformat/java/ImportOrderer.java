@@ -51,6 +51,26 @@ public final class ImportOrderer {
     }
 
     /**
+     * Bowerbird: reorders the imports in {@code text} into the import groups of {@code rules}, sorted by name within
+     * a group, with a blank line between groups when the rules ask for it.
+     *
+     * @throws FormatterException if the input could not be parsed.
+     */
+    public static String reorderImports(String text, BowerbirdRules rules) throws FormatterException {
+        ImmutableList<Tok> toks = buildToks(text, CLASS_START);
+        ImmutableList<String> groups = rules.importGroups();
+        Comparator<Import> comparator = Comparator.<Import>comparingInt(imp -> bowerbirdGroup(imp, groups))
+                .thenComparing(Import::imported)
+                // Without a static group, `import a.B.C;` and `import static a.B.C;` share a group and a name. The
+                // sorted set would drop one of them if the comparator called them equal.
+                .thenComparing(Import::isStatic, trueFirst());
+        BiFunction<Import, Import, Boolean> blankLine = rules.blankLineBetweenImportGroups()
+                ? (prev, curr) -> bowerbirdGroup(prev, groups) != bowerbirdGroup(curr, groups)
+                : (prev, curr) -> false;
+        return new ImportOrderer(text, toks, comparator, blankLine).reorderImports();
+    }
+
+    /**
      * Reorder the inputs in {@code text}, a complete Java program, in Google style. On success, another complete Java
      * program is returned, which is the same as the original except the imports are in order.
      *
@@ -162,34 +182,35 @@ public final class ImportOrderer {
     }
 
     /**
-     * Bowerbird: the import group of an import. Static imports first, then {@code java}, {@code javax}, {@code org},
-     * {@code com} and everything else.
+     * Bowerbird: the position of an import's group in {@code groups} (see {@link BowerbirdRules#importGroups()}).
+     * Static imports go in the {@code static} group when there is one; otherwise imports go in the group with the
+     * longest matching package prefix, then the {@code *} group, then after every group.
      */
-    private static int bowerbirdGroup(Import imp) {
+    private static int bowerbirdGroup(Import imp, List<String> groups) {
         if (imp.isStatic()) {
-            return 0;
+            int staticGroup = groups.indexOf(BowerbirdRules.STATIC_IMPORTS);
+            if (staticGroup >= 0) {
+                return staticGroup;
+            }
         }
-        switch (imp.topLevel()) {
-            case "java":
-                return 1;
-            case "javax":
-                return 2;
-            case "org":
-                return 3;
-            case "com":
-                return 4;
-            default:
-                return 5;
+        int best = -1;
+        int bestLength = -1;
+        for (int i = 0; i < groups.size(); i++) {
+            String prefix = groups.get(i);
+            if (prefix.equals(BowerbirdRules.STATIC_IMPORTS) || prefix.equals(BowerbirdRules.OTHER_IMPORTS)) {
+                continue;
+            }
+            boolean matches = imp.imported().equals(prefix) || imp.imported().startsWith(prefix + ".");
+            if (matches && prefix.length() > bestLength) {
+                best = i;
+                bestLength = prefix.length();
+            }
         }
-    }
-
-    /** Bowerbird: orders imports by {@link #bowerbirdGroup}, then by name. */
-    private static final Comparator<Import> BOWERBIRD_IMPORT_COMPARATOR =
-            Comparator.comparingInt(ImportOrderer::bowerbirdGroup).thenComparing(Import::imported);
-
-    /** Bowerbird: one blank line between import groups. */
-    private static boolean shouldInsertBlankLineBowerbird(Import prev, Import curr) {
-        return bowerbirdGroup(prev) != bowerbirdGroup(curr);
+        if (best >= 0) {
+            return best;
+        }
+        int other = groups.indexOf(BowerbirdRules.OTHER_IMPORTS);
+        return other >= 0 ? other : groups.size();
     }
 
     private final String text;
@@ -198,6 +219,18 @@ public final class ImportOrderer {
     private final Comparator<Import> importComparator;
     private final BiFunction<Import, Import, Boolean> shouldInsertBlankLineFn;
 
+    private ImportOrderer(
+            String text,
+            ImmutableList<Tok> toks,
+            Comparator<Import> importComparator,
+            BiFunction<Import, Import, Boolean> shouldInsertBlankLineFn) {
+        this.text = text;
+        this.toks = toks;
+        this.lineSeparator = Newlines.guessLineSeparator(text);
+        this.importComparator = importComparator;
+        this.shouldInsertBlankLineFn = shouldInsertBlankLineFn;
+    }
+
     private ImportOrderer(String text, ImmutableList<Tok> toks, Style style) {
         this.text = text;
         this.toks = toks;
@@ -205,9 +238,6 @@ public final class ImportOrderer {
         if (style.equals(Style.GOOGLE) || style.equals(Style.PALANTIR)) {
             this.importComparator = GOOGLE_IMPORT_COMPARATOR;
             this.shouldInsertBlankLineFn = ImportOrderer::shouldInsertBlankLineGoogle;
-        } else if (style.equals(Style.BOWERBIRD)) {
-            this.importComparator = BOWERBIRD_IMPORT_COMPARATOR;
-            this.shouldInsertBlankLineFn = ImportOrderer::shouldInsertBlankLineBowerbird;
         } else if (style.equals(Style.AOSP)) {
             this.importComparator = AOSP_IMPORT_COMPARATOR;
             this.shouldInsertBlankLineFn = ImportOrderer::shouldInsertBlankLineAosp;

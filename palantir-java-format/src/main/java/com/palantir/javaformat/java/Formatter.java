@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.Collection;
+import javax.annotation.Nullable;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.DiagnosticListener;
@@ -93,10 +94,20 @@ public final class Formatter {
     private final JavaFormatterOptions options;
     private final boolean debugMode;
 
+    /** Bowerbird: the rules to apply, or {@code null} for the upstream style in {@link #options}. */
+    @Nullable
+    private final BowerbirdRules rules;
+
     @VisibleForTesting
     Formatter(JavaFormatterOptions options, boolean debugMode) {
+        this(options, debugMode, null);
+    }
+
+    @VisibleForTesting
+    Formatter(JavaFormatterOptions options, boolean debugMode, @Nullable BowerbirdRules rules) {
         this.options = options;
         this.debugMode = debugMode;
+        this.rules = rules;
     }
 
     /** A new Formatter instance with default options. */
@@ -106,6 +117,26 @@ public final class Formatter {
 
     public static Formatter createFormatter(JavaFormatterOptions options) {
         return new Formatter(options, false);
+    }
+
+    /**
+     * Bowerbird: a formatter that applies {@code rules}. {@code options} still decides JavaDoc formatting; style,
+     * indent and line length come from the rules.
+     */
+    public static Formatter createFormatter(JavaFormatterOptions options, BowerbirdRules rules) {
+        return new Formatter(options, false, rules);
+    }
+
+    /** Bowerbird: the maximum line length, from the rules when there are any. */
+    private int maxLineLength() {
+        return rules != null ? rules.lineLength() : options.maxLineLength();
+    }
+
+    /** Bowerbird: sorts imports with the rules' import groups, or the style's ordering without rules. */
+    private String reorderImports(String input) throws FormatterException {
+        return rules != null
+                ? ImportOrderer.reorderImports(input, rules)
+                : ImportOrderer.reorderImports(input, options.style());
     }
 
     /**
@@ -121,6 +152,17 @@ public final class Formatter {
     static JavaOutput format(
             final JavaInput javaInput, JavaFormatterOptions options, CommentsHelper commentsHelper, boolean debugMode)
             throws FormatterException {
+        return format(javaInput, options, commentsHelper, debugMode, null);
+    }
+
+    /** Bowerbird: like {@link #format(JavaInput, JavaFormatterOptions, CommentsHelper, boolean)}, with rules. */
+    static JavaOutput format(
+            final JavaInput javaInput,
+            JavaFormatterOptions options,
+            CommentsHelper commentsHelper,
+            boolean debugMode,
+            @Nullable BowerbirdRules rules)
+            throws FormatterException {
 
         Context context = new Context();
         Options.instance(context).put("allowStringFolding", "false");
@@ -133,14 +175,13 @@ public final class Formatter {
 
         JavaInputAstVisitor visitor;
         if (getRuntimeVersion() >= 21) {
-            visitor = createVisitor("com.palantir.javaformat.java.java21.Java21InputAstVisitor", opsBuilder, options);
+            visitor = createVisitor(
+                    "com.palantir.javaformat.java.java21.Java21InputAstVisitor", opsBuilder, options, rules);
         } else if (getRuntimeVersion() >= 14) {
-            visitor = createVisitor("com.palantir.javaformat.java.java14.Java14InputAstVisitor", opsBuilder, options);
+            visitor = createVisitor(
+                    "com.palantir.javaformat.java.java14.Java14InputAstVisitor", opsBuilder, options, rules);
         } else {
-            visitor = new JavaInputAstVisitor(
-                    opsBuilder,
-                    options.indentationMultiplier(),
-                    options.style() == JavaFormatterOptions.Style.BOWERBIRD);
+            visitor = new JavaInputAstVisitor(opsBuilder, options.indentationMultiplier(), rules);
         }
 
         visitor.scan(unit, null);
@@ -154,11 +195,12 @@ public final class Formatter {
         Sink sink = debugMode ? new JsonSink() : new NoopSink();
 
         Obs.ExplorationNode observationNode = Obs.createRoot(sink);
-        State finalState =
-                doc.computeBreaks(commentsHelper, options.maxLineLength(), State.startingState(), observationNode);
+        int maxLineLength = rules != null ? rules.lineLength() : options.maxLineLength();
+        State finalState = doc.computeBreaks(commentsHelper, maxLineLength, State.startingState(), observationNode);
 
-        JavaOutput javaOutput = new JavaOutput(
-                javaInput, opsOutput.inputMetadata(), options.style() == JavaFormatterOptions.Style.BOWERBIRD);
+        // Bowerbird: blank lines typed before comments are only kept when the rules keep typed blank lines.
+        boolean keepBlankLinesBeforeComments = rules == null || rules.keepTypedBlankLines();
+        JavaOutput javaOutput = new JavaOutput(javaInput, opsOutput.inputMetadata(), !keepBlankLinesBeforeComments);
         doc.write(finalState, javaOutput);
         javaOutput.flush();
 
@@ -208,15 +250,22 @@ public final class Formatter {
 
     @SuppressWarnings("for-rollout:ThrowError")
     private static JavaInputAstVisitor createVisitor(
-            final String className, final OpsBuilder builder, final JavaFormatterOptions options) {
+            final String className,
+            final OpsBuilder builder,
+            final JavaFormatterOptions options,
+            @Nullable BowerbirdRules rules) {
         try {
-            return Class.forName(className)
-                    .asSubclass(JavaInputAstVisitor.class)
-                    .getConstructor(OpsBuilder.class, int.class, boolean.class)
-                    .newInstance(
-                            builder,
-                            options.indentationMultiplier(),
-                            options.style() == JavaFormatterOptions.Style.BOWERBIRD);
+            Class<? extends JavaInputAstVisitor> visitorClass =
+                    Class.forName(className).asSubclass(JavaInputAstVisitor.class);
+            if (rules == null) {
+                // The upstream constructor, which is the one registered for the native image.
+                return visitorClass
+                        .getConstructor(OpsBuilder.class, int.class)
+                        .newInstance(builder, options.indentationMultiplier());
+            }
+            return visitorClass
+                    .getConstructor(OpsBuilder.class, int.class, BowerbirdRules.class)
+                    .newInstance(builder, options.indentationMultiplier(), rules);
         } catch (ReflectiveOperationException e) {
             throw new LinkageError(e.getMessage());
         }
@@ -273,10 +322,10 @@ public final class Formatter {
      * Style Guide - 3.3.3 Import ordering and spacing</a>
      */
     public String formatSourceAndFixImports(String input) throws FormatterException {
-        input = ImportOrderer.reorderImports(input, options.style());
+        input = reorderImports(input);
         input = RemoveUnusedImports.removeUnusedImports(input);
         String formatted = formatSource(input);
-        formatted = StringWrapper.wrap(options.maxLineLength(), formatted, this);
+        formatted = StringWrapper.wrap(maxLineLength(), formatted, this);
         return formatted;
     }
 
@@ -290,7 +339,7 @@ public final class Formatter {
      * Style Guide - 3.3.3 Import ordering and spacing</a>
      */
     public String fixImports(String input) throws FormatterException {
-        return ImportOrderer.reorderImports(RemoveUnusedImports.removeUnusedImports(input), options.style());
+        return reorderImports(RemoveUnusedImports.removeUnusedImports(input));
     }
 
     /**
@@ -323,10 +372,10 @@ public final class Formatter {
         // 'de-linting' changes (e.g. import ordering).
         javaInput = ModifierOrderer.reorderModifiers(javaInput, characterRanges);
 
-        JavaCommentsHelper commentsHelper = new JavaCommentsHelper(javaInput.getLineSeparator(), options);
+        JavaCommentsHelper commentsHelper = new JavaCommentsHelper(javaInput.getLineSeparator(), options, rules);
         JavaOutput javaOutput;
         try {
-            javaOutput = format(javaInput, options, commentsHelper, debugMode);
+            javaOutput = format(javaInput, options, commentsHelper, debugMode, rules);
         } catch (FormattingError e) {
             throw new FormatterException(e.diagnostics());
         }

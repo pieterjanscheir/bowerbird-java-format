@@ -34,14 +34,22 @@ public final class JavaCommentsHelper implements CommentsHelper {
 
     @Nullable
     private final JavadocFormatter javadocFormatter;
-    /** Bowerbird: true when JavaDoc blocks get the Bowerbird layout, see {@link BowerbirdJavadoc}. */
-    private final boolean bowerbird;
+    /** Bowerbird: the rules for JavaDoc layout (see {@link BowerbirdJavadoc}), or {@code null} for upstream. */
+    @Nullable
+    private final BowerbirdRules rules;
+
+    private final int maxLineLength;
 
     public JavaCommentsHelper(String lineSeparator, JavaFormatterOptions options) {
+        this(lineSeparator, options, null);
+    }
+
+    public JavaCommentsHelper(String lineSeparator, JavaFormatterOptions options, @Nullable BowerbirdRules rules) {
         this.lineSeparator = lineSeparator;
         this.options = options;
-        this.javadocFormatter = options.formatJavadoc() ? new JavadocFormatter(options.maxLineLength()) : null;
-        this.bowerbird = options.style() == JavaFormatterOptions.Style.BOWERBIRD;
+        this.rules = rules;
+        this.maxLineLength = rules != null ? rules.lineLength() : options.maxLineLength();
+        this.javadocFormatter = options.formatJavadoc() ? new JavadocFormatter(maxLineLength) : null;
     }
 
     @Override
@@ -53,8 +61,8 @@ public final class JavaCommentsHelper implements CommentsHelper {
         if (javadocFormatter != null && tok.isJavadocComment()) {
             text = javadocFormatter.formatJavadoc(text, column0);
         }
-        if (bowerbird && tok.isJavadocComment()) {
-            text = BowerbirdJavadoc.format(text, lineSeparator);
+        if (rules != null && rules.javadocLayout() && tok.isJavadocComment()) {
+            text = BowerbirdJavadoc.format(text, lineSeparator, rules);
         }
         List<String> lines = new ArrayList<>();
         Iterator<String> it = Newlines.lineIterator(text);
@@ -143,8 +151,8 @@ public final class JavaCommentsHelper implements CommentsHelper {
             }
             // Preserve the original slash prefix (e.g. `///` for markdown docstrings) on wrapped lines.
             String prefix = lineCommentPrefix(line);
-            while (line.length() + column0 > options.maxLineLength()) {
-                int idx = options.maxLineLength() - column0;
+            while (line.length() + column0 > maxLineLength) {
+                int idx = maxLineLength - column0;
                 // only break on whitespace characters, and ignore the leading `// `
                 while (idx >= prefix.length() && !CharMatcher.whitespace().matches(line.charAt(idx))) {
                     idx--;

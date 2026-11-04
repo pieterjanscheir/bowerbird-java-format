@@ -81,8 +81,9 @@ public class PalantirJavaFormatFormattingServiceTest {
     public void defaultFormatSettings() throws Exception {
         String input = Files.readString(
                 Paths.get("../palantir-java-format/src/test/resources/com/palantir/javaformat/java/testdata/A.input"));
-        String output = Files.readString(
-                Path.of("../palantir-java-format/src/test/resources/com/palantir/javaformat/java/testdata/A.output"));
+        // Bowerbird: the plugin runs the formatter with --palantir, which applies Bowerbird's rules, so the expected
+        // output is Bowerbird's default style rather than upstream's A.output.
+        String output = Files.readString(Path.of("src/test/resources/A.bowerbird.output"));
         PsiFile file = createPsiFile("com/foo/FormatTest.java", input);
         ReformatCodeProcessor processor = new ReformatCodeProcessor(file, false);
         WriteCommandAction.runWriteCommandAction(file.getProject(), () -> {

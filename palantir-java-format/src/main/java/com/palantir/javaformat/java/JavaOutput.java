@@ -64,18 +64,18 @@ public final class JavaOutput extends Output {
     }
 
     /**
-     * Bowerbird: with {@code bowerbird} true, a blank line typed before a comment is only kept where the formatter
-     * keeps blank lines anyway (for example between import groups), instead of always.
+     * Bowerbird: with {@code dropTypedBlankLinesBeforeComments} true, a blank line typed before a comment is only kept
+     * where the formatter keeps blank lines anyway (for example between import groups), instead of always.
      */
-    public JavaOutput(JavaInput javaInput, InputMetadata inputMetadata, boolean bowerbird) {
+    public JavaOutput(JavaInput javaInput, InputMetadata inputMetadata, boolean dropTypedBlankLinesBeforeComments) {
         this.lineSeparator = javaInput.getLineSeparator();
         this.javaInput = javaInput;
         kN = javaInput.getkN();
         this.inputMetadata = inputMetadata;
-        this.bowerbird = bowerbird;
+        this.dropTypedBlankLinesBeforeComments = dropTypedBlankLinesBeforeComments;
     }
 
-    private final boolean bowerbird;
+    private final boolean dropTypedBlankLinesBeforeComments;
 
     // TODO(jdd): Add invariant.
     @Override
@@ -98,7 +98,7 @@ public final class JavaOutput extends Output {
              * there's a blank line here and it's a comment.
              */
             BlankLineWanted wanted = inputMetadata.blankLines().getOrDefault(lastK, BlankLineWanted.NO);
-            if ((isComment(text) && !bowerbird)
+            if ((isComment(text) && !dropTypedBlankLinesBeforeComments)
                     ? sawNewlines
                     : wanted.wanted(state).orElse(sawNewlines)) {
                 ++newlinesPending;

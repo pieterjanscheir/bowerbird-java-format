@@ -1,0 +1,28 @@
+package example;
+
+class Javadoc {
+
+    /**
+     * Places an order on the exchange.
+     *
+     * Second paragraph of the description.
+     *
+     * @param account   the client account
+     * @param order the order to place, which can have a very long description that goes past the right margin of the line
+     * @return the placement result
+     * @throws IllegalStateException when the order is refused
+     * @throws IllegalArgumentException   when the order is invalid
+     */
+    String place(String account, String order) {
+        return account + order;
+    }
+
+    /** One-line comment that is quite long and would go past the right margin if it were wrapped at 120 characters. */
+    void oneLine() {}
+
+    /**
+     * @param value the value
+     */
+    void onlyParam(int value) {}
+
+}

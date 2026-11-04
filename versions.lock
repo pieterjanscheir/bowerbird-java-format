@@ -16,11 +16,13 @@ com.diffplug.spotless:spotless-plugin-gradle:8.10.4 (2 constraints: 0117e93b)
 
 com.fasterxml.jackson.core:jackson-annotations:2.22 (8 constraints: 729097f3)
 
-com.fasterxml.jackson.core:jackson-core:2.22.4 (6 constraints: b77419a1)
+com.fasterxml.jackson.core:jackson-core:2.22.4 (7 constraints: 868ccf2f)
 
-com.fasterxml.jackson.core:jackson-databind:2.22.4 (8 constraints: f4a0473c)
+com.fasterxml.jackson.core:jackson-databind:2.22.4 (9 constraints: c3b83e92)
 
 com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.22.4 (4 constraints: ff56a7b8)
+
+com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.22.4 (1 constraints: 3c053d3b)
 
 com.fasterxml.jackson.datatype:jackson-datatype-guava:2.22.4 (4 constraints: 4d507cfa)
 
@@ -135,6 +137,8 @@ org.openjdk.jmh:jmh-generator-annprocess:1.37 (1 constraints: df04fc30)
 org.slf4j:slf4j-api:2.0.18 (5 constraints: fa4d332b)
 
 org.tukaani:xz:1.9 (1 constraints: 6b09e995)
+
+org.yaml:snakeyaml:2.5 (1 constraints: 3f178e10)
 
 
 

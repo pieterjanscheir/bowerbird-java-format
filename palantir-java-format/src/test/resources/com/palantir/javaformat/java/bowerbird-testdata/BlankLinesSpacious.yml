@@ -1,0 +1,3 @@
+blankLines:
+  betweenFields: true
+  aroundInterfaceMethods: true

@@ -1,0 +1,27 @@
+package example;
+
+import net.other.Thing;
+import com.example.trading.Order;
+import java.util.List;
+import static java.util.Objects.requireNonNull;
+import org.slf4j.Logger;
+import javax.annotation.Nullable;
+import java.util.Map;
+import static org.assertj.core.api.Assertions.assertThat;
+import com.google.common.collect.ImmutableList;
+
+class ImportGroups {
+
+    @Nullable
+    Thing thing;
+
+    Order order;
+
+    List<Map<String, Logger>> loggers = ImmutableList.of();
+
+    void check() {
+        requireNonNull(order);
+        assertThat(thing).isNull();
+    }
+
+}

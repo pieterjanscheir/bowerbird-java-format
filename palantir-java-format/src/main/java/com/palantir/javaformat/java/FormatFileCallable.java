@@ -26,6 +26,7 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 
 /** Encapsulates information about a file to be formatted, including which parts of the file to format. */
 class FormatFileCallable implements Callable<String> {
@@ -36,10 +37,24 @@ class FormatFileCallable implements Callable<String> {
     private final CommandLineOptions parameters;
     private final JavaFormatterOptions options;
 
+    /** Bowerbird: the rules to apply, or {@code null} for the upstream style in {@link #options}. */
+    @Nullable
+    private final BowerbirdRules rules;
+
     public FormatFileCallable(CommandLineOptions parameters, String input, JavaFormatterOptions options) {
+        this(parameters, input, options, null);
+    }
+
+    public FormatFileCallable(
+            CommandLineOptions parameters, String input, JavaFormatterOptions options, @Nullable BowerbirdRules rules) {
         this.input = input;
         this.parameters = parameters;
         this.options = options;
+        this.rules = rules;
+    }
+
+    private int maxLineLength() {
+        return rules != null ? rules.lineLength() : options.maxLineLength();
     }
 
     @Override
@@ -48,7 +63,8 @@ class FormatFileCallable implements Callable<String> {
             return fixImports(input);
         }
 
-        Formatter formatter = Formatter.createFormatter(options);
+        Formatter formatter =
+                rules != null ? Formatter.createFormatter(options, rules) : Formatter.createFormatter(options);
         if (parameters.outputReplacements()) {
             RangeSet<Integer> characterRanges = characterRanges(input);
             Set<Range<Integer>> rangesToChange = characterRanges.asRanges();
@@ -56,10 +72,10 @@ class FormatFileCallable implements Callable<String> {
             if (parameters.reflowLongStrings()) {
                 String formattedText = Utils.applyReplacements(input, replacements);
                 // avoid trying to wrap the input unless the lines needing wrapping are part of the "characterRanges"
-                if (!StringWrapper.linesNeedWrapping(options.maxLineLength(), formattedText, characterRanges)) {
+                if (!StringWrapper.linesNeedWrapping(maxLineLength(), formattedText, characterRanges)) {
                     return writeFormatReplacements(replacements);
                 }
-                String wrappedFormattedText = StringWrapper.wrap(options.maxLineLength(), formattedText, formatter);
+                String wrappedFormattedText = StringWrapper.wrap(maxLineLength(), formattedText, formatter);
                 // if no wrapping change happened, return the initial replacements
                 if (wrappedFormattedText.equals(formattedText)) {
                     return writeFormatReplacements(replacements);
@@ -84,7 +100,7 @@ class FormatFileCallable implements Callable<String> {
         String formatted = formatter.formatSource(input, characterRanges(input).asRanges());
         formatted = fixImports(formatted);
         if (parameters.reflowLongStrings()) {
-            formatted = StringWrapper.wrap(options.maxLineLength(), formatted, formatter);
+            formatted = StringWrapper.wrap(maxLineLength(), formatted, formatter);
         }
         return formatted;
     }
@@ -94,7 +110,9 @@ class FormatFileCallable implements Callable<String> {
             input = RemoveUnusedImports.removeUnusedImports(input);
         }
         if (parameters.sortImports()) {
-            input = ImportOrderer.reorderImports(input, options.style());
+            input = rules != null
+                    ? ImportOrderer.reorderImports(input, rules)
+                    : ImportOrderer.reorderImports(input, options.style());
         }
         return input;
     }

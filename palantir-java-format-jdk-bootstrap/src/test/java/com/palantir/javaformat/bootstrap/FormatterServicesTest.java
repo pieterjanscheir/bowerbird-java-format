@@ -77,7 +77,9 @@ final class FormatterServicesTest {
                 formatterService.getFormatReplacements(input, List.of(Range.open(0, input.length())));
 
         assertThat(replacements).singleElement().satisfies(replacement -> {
-            assertThat(replacement.getReplacementString()).startsWith("class A {\n    void f() {");
+            // Bowerbird: both services run Main --palantir, which formats with Bowerbird's rules (a blank line after
+            // the class header). format.output is Bowerbird output for the same reason.
+            assertThat(replacement.getReplacementString()).startsWith("class A {\n\n    void f() {");
         });
     }
 
