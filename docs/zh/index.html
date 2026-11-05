@@ -252,7 +252,7 @@ details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
 <p>每个版本也会把 jar 包附加到对应的 <a href="https://github.com/pieterjanscheir/bowerbird-java-format/releases">GitHub Release</a> 上，方便直接下载。</p>
 
 <h2 id="gradle">在 Gradle 中使用</h2>
-<p>模块目录和 Java 包名（<code>com.palantir.javaformat</code>）有意保持不变，这样上游的 Gradle 插件就能加载 Bowerbird。应用该插件，并让它使用 Bowerbird 而不是默认的格式化器：</p>
+<p>SPI 类和主类保留了上游的名称（<code>com.palantir.javaformat.java</code>），这样上游的 Gradle 插件就能加载 Bowerbird。应用该插件，并让它使用 Bowerbird 而不是默认的格式化器：</p>
 <pre><code>plugins {
     id 'com.palantir.java-format' version '&lt;upstream version Bowerbird is based on&gt;'
 }
@@ -289,9 +289,9 @@ continuationIndent: 4</code></pre>
 
 <h3 id="command-line">在命令行中使用</h3>
 <p>对于 pre-commit 钩子、CI 脚本以及其他直接运行格式化器的工具，请构建命令行启动器，并通过 <code>--config</code> 传入配置文件：</p>
-<pre><code>./gradlew :palantir-java-format:installDist
+<pre><code>./gradlew :bowerbird-java-format:installDist
 export JAVA_OPTS="$(for p in api code file parser tree util; do printf -- '--add-exports=jdk.compiler/com.sun.tools.javac.%s=ALL-UNNAMED ' $p; done)"
-palantir-java-format/build/install/palantir-java-format/bin/palantir-java-format \
+bowerbird-java-format/build/install/bowerbird-java-format/bin/bowerbird-java-format \
     --config bowerbird.yml --replace src/main/java/Example.java</code></pre>
 <p>在 JDK 16 及更高版本上需要 <code>JAVA_OPTS</code> 这一行：格式化器使用 JDK 自带的 Java 解析器，而 JDK 只有在加上这些参数时才会开放它。配置文件无效时，会输出一行错误信息并以退出码 2 结束。</p>
 <p>只指定 <code>--palantir</code> 而不指定 <code>--config</code> 时，会使用 classpath 上的 <code>bowerbird.yml</code>；如果没有，则使用 Bowerbird 的默认值。</p>
@@ -1551,16 +1551,16 @@ void check(int x) {
 
 <h2 id="building">构建</h2>
 <p>需要 JDK 21，其余依赖都由 Gradle wrapper 自动下载。</p>
-<pre><code>./gradlew :palantir-java-format:test</code></pre>
+<pre><code>./gradlew :bowerbird-java-format:test</code></pre>
 <p>如需在其他项目中试用本地构建，请将其发布到 Maven Local，并在该项目的仓库列表中添加 <code>mavenLocal()</code>：</p>
-<pre><code>./gradlew :palantir-java-format-spi:publishToMavenLocal \
-    :palantir-java-format-jdk-bootstrap:publishToMavenLocal \
-    :palantir-java-format:publishToMavenLocal</code></pre>
+<pre><code>./gradlew :bowerbird-java-format-spi:publishToMavenLocal \
+    :bowerbird-java-format-jdk-bootstrap:publishToMavenLocal \
+    :bowerbird-java-format:publishToMavenLocal</code></pre>
 <p>CI 会运行 <code>./gradlew build</code>，其中还包括 Error Prone 和项目自身的格式检查；如果构建修改了已跟踪的文件，CI 会失败。</p>
 
 <h2 id="adding-rules">添加格式化规则</h2>
 <ol>
-  <li>在 <code>palantir-java-format/src/test/resources/com/palantir/javaformat/java/bowerbird-testdata/</code> 中添加一对 <code>YourRule.input</code> 和 <code>YourRule.output</code> 文件，<code>BowerbirdIntegrationTest</code> 会自动识别它们。</li>
+  <li>在 <code>bowerbird-java-format/src/test/resources/io/github/pieterjanscheir/bowerbird/java/bowerbird-testdata/</code> 中添加一对 <code>YourRule.input</code> 和 <code>YourRule.output</code> 文件，<code>BowerbirdIntegrationTest</code> 会自动识别它们。</li>
   <li>把该配置项（连同默认值）添加到 <code>BowerbirdRules</code>，并加入 <code>BowerbirdConfig</code> 中的映射表，这样 <code>bowerbird.yml</code> 就能设置它。</li>
   <li>修改格式化器（通常在 <code>JavaInputAstVisitor.java</code> 中），并用 <code>rule(BowerbirdRules::yourSetting)</code> 进行控制，以免影响上游风格及其测试。</li>
   <li>如需测试非默认值，请在输入和输出文件旁添加 <code>YourRule.yml</code>；<code>BowerbirdIntegrationTest</code> 会将其应用到该测试用例。</li>

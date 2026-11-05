@@ -54,21 +54,20 @@ allprojects {
     }
 }
 
-// Bowerbird: publish the formatter under its own artifact names. Module folders and
-// Java packages stay identical to upstream palantir-java-format so upstream changes merge cleanly.
-def bowerbirdArtifactIds = [
-    'palantir-java-format': 'bowerbird-java-format',
-    'palantir-java-format-spi': 'bowerbird-java-format-spi',
-    'palantir-java-format-jdk-bootstrap': 'bowerbird-java-format-jdk-bootstrap',
+// Bowerbird: the formatter artifacts, published under their project names.
+def bowerbirdPublishedProjects = [
+    'bowerbird-java-format',
+    'bowerbird-java-format-spi',
+    'bowerbird-java-format-jdk-bootstrap',
 ]
 subprojects { p ->
     p.plugins.withId('maven-publish') {
         p.publishing.publications.withType(MavenPublication).configureEach {
-            if (bowerbirdArtifactIds.containsKey(p.name)) {
-                artifactId = bowerbirdArtifactIds[p.name]
+            if (bowerbirdPublishedProjects.contains(p.name)) {
+                artifactId = p.name
             }
         }
-        if (bowerbirdArtifactIds.containsKey(p.name)) {
+        if (bowerbirdPublishedProjects.contains(p.name)) {
             // Bowerbird: released to GitHub Packages by .github/workflows/release.yml.
             // BOWERBIRD_MAVEN_URL overrides the target, for example with a file:// URL to test publishing locally.
             p.publishing.repositories {

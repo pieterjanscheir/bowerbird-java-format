@@ -87,16 +87,17 @@ binary, which does not contain Bowerbird's rules and can't read `bowerbird.yml`.
 [palantir-java-format plugin](https://plugins.jetbrains.com/plugin/13180-palantir-java-format); it picks up the
 formatter version the Gradle plugin resolves. See [IntelliJ](https://pieterjanscheir.github.io/bowerbird-java-format/#intellij).
 
-Module folders and Java packages (`com.palantir.javaformat`) are deliberately unchanged, so that
-upstream fixes can be merged in and the upstream Gradle and IntelliJ plugins can load Bowerbird.
+Bowerbird's Java packages are `io.github.pieterjanscheir.bowerbird`, except the SPI (`com.palantir.javaformat.java.FormatterService`
+and its types) and a forwarding `com.palantir.javaformat.java.Main`. The upstream Gradle and IntelliJ plugins load
+Bowerbird through those names.
 
 ## Building
 
 Requires JDK 21.
 
 ```bash
-./gradlew :palantir-java-format:test
-./gradlew :palantir-java-format-spi:publishToMavenLocal :palantir-java-format-jdk-bootstrap:publishToMavenLocal :palantir-java-format:publishToMavenLocal
+./gradlew :bowerbird-java-format:test
+./gradlew :bowerbird-java-format-spi:publishToMavenLocal :bowerbird-java-format-jdk-bootstrap:publishToMavenLocal :bowerbird-java-format:publishToMavenLocal
 ```
 
 CI ([ci.yml](./.github/workflows/ci.yml)) runs `./gradlew build` on every pull request and push to `main`.
@@ -105,7 +106,7 @@ It fails when the build changes tracked files.
 ## Adding a formatting rule
 
 1. Add a `YourRule.input` and `YourRule.output` pair to
-   `palantir-java-format/src/test/resources/com/palantir/javaformat/java/bowerbird-testdata/`.
+   `bowerbird-java-format/src/test/resources/io/github/pieterjanscheir/bowerbird/java/bowerbird-testdata/`.
    `BowerbirdIntegrationTest` picks them up.
 2. Add the setting to `BowerbirdRules` (with its default, and its value in the `palantir` preset) and to the
    table in `BowerbirdConfig`.

@@ -10,14 +10,14 @@ buildscript {
 apply plugin: 'com.palantir.jdks.settings'
 rootProject.name = 'bowerbird-java-format-parent'
 
-include ':gradle-palantir-java-format'
+include ':gradle-bowerbird-java-format'
 include ':eclipse_plugin'
 include ':idea-plugin'
-include ':palantir-java-format-spi'
-include ':palantir-java-format'
-include ':palantir-java-format-jdk-bootstrap'
-include ':palantir-java-format-benchmarks'
-include ':palantir-java-format-native'
+include ':bowerbird-java-format-spi'
+include ':bowerbird-java-format'
+include ':bowerbird-java-format-jdk-bootstrap'
+include ':bowerbird-java-format-benchmarks'
+include ':bowerbird-java-format-native'
 
 boolean isCiServer = System.getenv().containsKey('CI')
 buildCache {
