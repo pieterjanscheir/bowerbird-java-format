@@ -120,13 +120,13 @@ org.immutables:value:2.12.3 (2 constraints: af16f634)
 
 org.jetbrains:annotations:26.0.2 (2 constraints: b7284379)
 
-org.jetbrains.kotlin:kotlin-stdlib:1.9.10 (2 constraints: c2210fe1)
+org.jetbrains.kotlin:kotlin-stdlib:2.3.21 (2 constraints: bc215ee0)
 
-org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10 (2 constraints: 3f1b4b83)
+org.jetbrains.kotlin:kotlin-stdlib-common:2.3.21 (1 constraints: fc0b24f9)
 
-org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10 (1 constraints: e210ffd2)
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.3.21 (1 constraints: df10f0d2)
 
-org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10 (2 constraints: 8118c1c5)
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21 (2 constraints: 8118c1c5)
 
 org.jspecify:jspecify:1.0.1 (15 constraints: 1df49aa1)
 

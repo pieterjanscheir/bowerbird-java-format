@@ -30,6 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: main
           fetch-depth: 0
 
@@ -50,4 +51,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           UPSTREAM_REF: ${{ inputs.ref }}
-        run: .github/scripts/upstream-sync.sh "$UPSTREAM_REF"
+        # The checkout keeps no credentials, so git fetches and pushes through the gh token from this step on.
+        run: |
+          gh auth setup-git
+          .github/scripts/upstream-sync.sh "$UPSTREAM_REF"
