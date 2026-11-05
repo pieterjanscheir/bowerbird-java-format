@@ -15,6 +15,7 @@ It is available under the same [Apache 2.0 License](./LICENSE). See [NOTICE](./N
 **Documentation: <https://pieterjanscheir.github.io/bowerbird-java-format/>** ([中文](https://pieterjanscheir.github.io/bowerbird-java-format/zh/)).
 It covers setup, every setting, the default style with before/after examples, and the contributor workflow.
 The pages are built from [docs/index.html](./docs/index.html) and [docs/zh/index.html](./docs/zh/index.html).
+They share their styles and scripts (search, table of contents, code highlighting) in [docs/assets](./docs/assets/); there is no build step.
 The upstream documentation is kept in [docs/upstream-README.md](./docs/upstream-README.md).
 
 ## Configuring the rules
