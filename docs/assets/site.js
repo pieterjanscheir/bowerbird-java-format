@@ -209,7 +209,11 @@
       if (label) {
         var inner = el('span', 'label-text');
         while (label.firstChild) inner.appendChild(label.firstChild);
-        if (label.classList.contains('yaml')) inner.innerHTML = toLines(tokYaml(inner.textContent)).join('<br>');
+        if (label.classList.contains('yaml')) {
+          // Nested settings are written with <br>, which has no text: turn it into a newline first.
+          inner.querySelectorAll('br').forEach(function (br) { br.replaceWith('\n'); });
+          inner.innerHTML = toLines(tokYaml(inner.textContent)).join('<br>');
+        }
         label.appendChild(inner);
         label.appendChild(copyButton(function () { return src; }));
       }
@@ -317,7 +321,9 @@
       b.addEventListener('click', function () { show(i); });
       b.addEventListener('keydown', function (e) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-          var j = (i + (e.key === 'ArrowRight' ? 1 : -1) + panes.length) % panes.length;
+          // Skip tabs that are hidden at this width (the default's tab, next to the default column).
+          var step = e.key === 'ArrowRight' ? 1 : -1, j = i;
+          do { j = (j + step + panes.length) % panes.length; } while (buttons[j].offsetParent === null && j !== i);
           show(j); buttons[j].focus();
         }
       });
@@ -533,6 +539,11 @@
   if (menuBtn) menuBtn.addEventListener('click', function () { setMenu(!sidebar.classList.contains('open')); });
   if (scrim) scrim.addEventListener('click', function () { setMenu(false); });
   if (sidebar) sidebar.addEventListener('click', function (e) { if (e.target.closest('a')) setMenu(false); });
+  // The drawer only exists on narrow screens: close it (and unlock scrolling) when the screen gets wider.
+  var desktopMq = matchMedia('(min-width: 1024px)');
+  var onDesktop = function (e) { if (e.matches) setMenu(false); };
+  if (desktopMq.addEventListener) desktopMq.addEventListener('change', onDesktop);
+  else if (desktopMq.addListener) desktopMq.addListener(onDesktop);
 
   /* ---------- Search ---------- */
   var index = [];
@@ -591,14 +602,19 @@
   sInput.setAttribute('aria-label', T.search);
   var results = [], sel = 0, lastFocus = null;
 
+  // Marks every word in one pass over the raw text, so a later word can't match inside markup or entities.
   function highlight(text, words) {
-    var h = esc(text);
-    words.forEach(function (w) {
-      if (!w) return;
-      var re = new RegExp('(' + esc(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
-      h = h.replace(re, '<mark>$1</mark>');
-    });
-    return h;
+    words = words.filter(Boolean);
+    if (!words.length) return esc(text);
+    var re = new RegExp(words.map(function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); })
+      .sort(function (a, b) { return b.length - a.length; }).join('|'), 'ig');
+    var out = '', last = 0, m;
+    while ((m = re.exec(text))) {
+      if (!m[0]) { re.lastIndex++; continue; }
+      out += esc(text.slice(last, m.index)) + '<mark>' + esc(m[0]) + '</mark>';
+      last = m.index + m[0].length;
+    }
+    return out + esc(text.slice(last));
   }
   function snippet(body, w) {
     var i = body.toLowerCase().indexOf(w);
