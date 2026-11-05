@@ -18,6 +18,7 @@ include ':bowerbird-java-format'
 include ':bowerbird-java-format-jdk-bootstrap'
 include ':bowerbird-java-format-benchmarks'
 include ':bowerbird-java-format-native'
+include ':bowerbird-maven-plugin'
 
 boolean isCiServer = System.getenv().containsKey('CI')
 buildCache {
