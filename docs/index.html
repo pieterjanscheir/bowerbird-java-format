@@ -1570,9 +1570,12 @@ void check(int x) {
 <p>Keep one rule per commit, so upstream merge conflicts are easy to trace.</p>
 
 <h2 id="upstream">Staying up to date with upstream</h2>
-<p>A weekly workflow opens a pull request when palantir-java-format publishes a new release, or an issue when the merge conflicts. You can also run it by hand from the Actions tab for a specific upstream tag or branch. To merge by hand:</p>
-<pre><code>git fetch upstream
-git merge upstream/develop</code></pre>
+<p>A weekly workflow opens a pull request when palantir-java-format publishes a new release, or an issue when the merge conflicts. You can also run it by hand from the Actions tab for a specific upstream tag or branch.</p>
+<p>Don't use a plain <code>git merge</code>: Bowerbird renamed upstream's packages and modules, so every renamed line would conflict with upstream edits next to it. <code>.github/scripts/upstream-merge.sh</code> first gives upstream's code Bowerbird's names, then merges, so only real conflicts are left. To merge by hand:</p>
+<pre><code>git fetch upstream --tags
+.github/scripts/upstream-merge.sh upstream/develop
+./gradlew format # renamed lines can need re-wrapping; commit what it changes</code></pre>
+<p>When it conflicts, keep Bowerbird's <code>rule(...)</code> checks and apply upstream's change around them, then run <code>git add -A &amp;&amp; git commit --no-edit</code> and <code>./gradlew format</code>. <code>BowerbirdPalantirPresetTest</code> fails when upstream's formatting changed and <code>preset: palantir</code> no longer matches it.</p>
 <p><code>README.md</code> conflicts on every upstream change to it: keep Bowerbird's version and apply upstream's changes to <a href="https://github.com/pieterjanscheir/bowerbird-java-format/blob/main/docs/upstream-README.md"><code>docs/upstream-README.md</code></a> if they matter.</p>
 
 <h2 id="releasing">Releasing</h2>

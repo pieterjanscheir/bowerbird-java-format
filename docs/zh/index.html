@@ -1570,9 +1570,12 @@ void check(int x) {
 <p>每次提交只包含一条规则，这样与上游合并时出现的冲突更容易追溯。</p>
 
 <h2 id="upstream">与上游保持同步</h2>
-<p>每周运行的工作流会在 palantir-java-format 发布新版本时创建一个 pull request；如果合并出现冲突，则创建一个 issue。你也可以在 Actions 标签页中针对特定的上游标签或分支手动运行它。手动合并的方法如下：</p>
-<pre><code>git fetch upstream
-git merge upstream/develop</code></pre>
+<p>每周运行的工作流会在 palantir-java-format 发布新版本时创建一个 pull request；如果合并出现冲突，则创建一个 issue。你也可以在 Actions 标签页中针对特定的上游标签或分支手动运行它。</p>
+<p>不要直接使用 <code>git merge</code>：Bowerbird 重命名了上游的包和模块，因此每一行被重命名的代码都会与上游在其附近的修改发生冲突。<code>.github/scripts/upstream-merge.sh</code> 会先把上游代码改成 Bowerbird 的名称，然后再合并，这样只会留下真正的冲突。手动合并的方法如下：</p>
+<pre><code>git fetch upstream --tags
+.github/scripts/upstream-merge.sh upstream/develop
+./gradlew format # 重命名后的代码行可能需要重新换行；提交它所做的修改</code></pre>
+<p>出现冲突时，请保留 Bowerbird 的 <code>rule(...)</code> 检查，并在其周围应用上游的修改，然后运行 <code>git add -A &amp;&amp; git commit --no-edit</code> 和 <code>./gradlew format</code>。如果上游的格式化行为发生了变化、<code>preset: palantir</code> 不再与之一致，<code>BowerbirdPalantirPresetTest</code> 会失败。</p>
 <p>上游每次修改 <code>README.md</code> 都会产生冲突：请保留 Bowerbird 的版本；如果上游的改动有意义，再把它们应用到 <a href="https://github.com/pieterjanscheir/bowerbird-java-format/blob/main/docs/upstream-README.md"><code>docs/upstream-README.md</code></a>。</p>
 
 <h2 id="releasing">发布</h2>

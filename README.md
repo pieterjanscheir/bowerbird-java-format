@@ -124,15 +124,32 @@ Keep one rule per commit, so upstream merge conflicts are easy to trace. When a 
 
 Every Monday, [upstream-sync.yml](./.github/workflows/upstream-sync.yml) merges the latest palantir-java-format
 release into a branch and opens a pull request, or opens an issue when the merge conflicts. Run it from the
-Actions tab to merge a specific upstream tag or branch. To merge by hand:
+Actions tab to merge a specific upstream tag or branch.
+
+Don't use a plain `git merge`. Bowerbird renamed upstream's packages and modules, so every renamed line would
+conflict with upstream edits next to it. [upstream-merge.sh](./.github/scripts/upstream-merge.sh) first gives
+upstream's code Bowerbird's names with [bowerbird-rename.sh](./.github/scripts/bowerbird-rename.sh), then merges,
+so only real conflicts are left. The upstream commit is still the merge's second parent. To merge by hand:
 
 ```bash
-git fetch upstream
-git merge upstream/develop
+git fetch upstream --tags
+.github/scripts/upstream-merge.sh upstream/develop
+./gradlew format # renamed lines can need re-wrapping; commit what it changes
 ```
 
-`README.md` will conflict on every upstream change to it: keep this version and apply their changes to
-`docs/upstream-README.md` if you care about them.
+### Resolving upstream conflicts
+
+- `README.md` conflicts on every upstream change to it: keep this version and apply their changes to
+  `docs/upstream-README.md` if you care about them.
+- In the formatter, keep Bowerbird's `rule(...)` checks and apply upstream's change around them. Then run
+  `./gradlew :bowerbird-java-format:test`: `BowerbirdPalantirPresetTest` fails when upstream's formatting changed
+  and `preset: palantir` no longer matches it.
+- When the conflicts are resolved, run `git add -A && git commit --no-edit`, then `./gradlew format`, and commit
+  what it changes.
+- The SPI (`com.palantir.javaformat.java.FormatterService` and its types) and the forwarding
+  `com.palantir.javaformat.java.Main` keep upstream's package. Everything else upstream adds is moved to
+  `io.github.pieterjanscheir.bowerbird` and the `bowerbird-java-format*` modules. The sync fails if a file is left
+  under the old names.
 
 ## Releasing
 
