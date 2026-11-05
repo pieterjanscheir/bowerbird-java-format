@@ -32,7 +32,7 @@ jobs:
           cache-read-only: true
 
       - name: Test
-        run: ./gradlew :bowerbird-java-format-spi:check :bowerbird-java-format-jdk-bootstrap:check :bowerbird-java-format:check --stacktrace
+        run: ./gradlew :bowerbird-java-format-spi:check :bowerbird-java-format-jdk-bootstrap:check :bowerbird-java-format:check :bowerbird-maven-plugin:check --stacktrace
 
       - name: Publish to GitHub Packages
         env:
@@ -43,6 +43,7 @@ jobs:
           :bowerbird-java-format-spi:publishMavenPublicationToGitHubPackagesRepository
           :bowerbird-java-format-jdk-bootstrap:publishMavenPublicationToGitHubPackagesRepository
           :bowerbird-java-format:publishMavenPublicationToGitHubPackagesRepository
+          :bowerbird-maven-plugin:publishMavenPublicationToGitHubPackagesRepository
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3

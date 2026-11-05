@@ -55,6 +55,7 @@ See [Default style](https://pieterjanscheir.github.io/bowerbird-java-format/#rul
 | Formatter | `io.github.pieterjanscheir.bowerbird:bowerbird-java-format` |
 | SPI | `io.github.pieterjanscheir.bowerbird:bowerbird-java-format-spi` |
 | JDK bootstrap | `io.github.pieterjanscheir.bowerbird:bowerbird-java-format-jdk-bootstrap` |
+| Maven plugin | `io.github.pieterjanscheir.bowerbird:bowerbird-maven-plugin` |
 
 Releases are published to GitHub Packages, which needs a personal access token with the `read:packages`
 scope, even for public packages. The jars are also attached to each [GitHub Release](https://github.com/pieterjanscheir/bowerbird-java-format/releases).
@@ -88,6 +89,29 @@ binary, which does not contain Bowerbird's rules and can't read `bowerbird.yml`.
 [palantir-java-format plugin](https://plugins.jetbrains.com/plugin/13180-palantir-java-format); it picks up the
 formatter version the Gradle plugin resolves. See [IntelliJ](https://pieterjanscheir.github.io/bowerbird-java-format/#intellij).
 
+For Maven, add GitHub Packages as a `<pluginRepository>` (with your token in `~/.m2/settings.xml` under the
+same `id`) and the Bowerbird plugin. `check` runs in the `verify` phase and fails on unformatted files;
+`mvn bowerbird:apply` formats them. The plugin picks up the nearest `bowerbird.yml` in the module or a parent
+module, and only formats UTF-8 sources.
+See [Maven](https://pieterjanscheir.github.io/bowerbird-java-format/#maven) for all parameters.
+
+```xml
+<plugin>
+    <groupId>io.github.pieterjanscheir.bowerbird</groupId>
+    <artifactId>bowerbird-maven-plugin</artifactId>
+    <version><!-- bowerbird version --></version>
+    <executions>
+        <execution>
+            <goals>
+                <goal>check</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+```
+
+Supported Java, Maven and Gradle versions are listed in [docs/compatibility.md](./docs/compatibility.md).
+
 Bowerbird's Java packages are `io.github.pieterjanscheir.bowerbird`, except the SPI (`com.palantir.javaformat.java.FormatterService`
 and its types) and a forwarding `com.palantir.javaformat.java.Main`. The upstream Gradle and IntelliJ plugins load
 Bowerbird through those names.
@@ -98,7 +122,7 @@ Requires JDK 21.
 
 ```bash
 ./gradlew :bowerbird-java-format:test
-./gradlew :bowerbird-java-format-spi:publishToMavenLocal :bowerbird-java-format-jdk-bootstrap:publishToMavenLocal :bowerbird-java-format:publishToMavenLocal
+./gradlew :bowerbird-java-format-spi:publishToMavenLocal :bowerbird-java-format-jdk-bootstrap:publishToMavenLocal :bowerbird-java-format:publishToMavenLocal :bowerbird-maven-plugin:publishToMavenLocal
 ```
 
 CI ([ci.yml](./.github/workflows/ci.yml)) runs `./gradlew build` on every pull request and push to `main`.
