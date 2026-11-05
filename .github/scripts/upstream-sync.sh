@@ -5,19 +5,26 @@
 #   upstream-ref  an upstream tag or branch; defaults to the latest release tag (x.y.z)
 #
 # Environment:
-#   DRY_RUN=1   do everything locally, but push nothing and create no pull request or issue
-#   GH_TOKEN    needed (unless DRY_RUN=1) for the gh CLI
+#   DRY_RUN=1      do everything locally, but push nothing and create no pull request or issue
+#   SKIP_FORMAT=1  don't run ./gradlew format after renaming (for quick local tests; CI will then flag formatting)
+#   BASE_BRANCH    the branch to merge into; defaults to main (overridable for testing)
+#   GH_TOKEN       needed (unless DRY_RUN=1) for the gh CLI
 #
 # Outcomes:
 #   - already merged, or a pull request or issue already open for it: nothing happens
 #   - merges cleanly: pushes branch upstream-sync/<ref>, opens a pull request into main, starts CI on it
 #   - conflicts: opens an issue listing the conflicting files
+#
+# Bowerbird renamed upstream's packages and modules (#27), so the merge goes through upstream-merge.sh, which
+# merges upstream's code in Bowerbird's names.
 set -euo pipefail
 
 UPSTREAM_URL=${UPSTREAM_URL:-https://github.com/palantir/palantir-java-format.git}
 UPSTREAM_REMOTE=${UPSTREAM_REMOTE:-upstream} # overridable for testing against another repository
-BASE_BRANCH=main
+BASE_BRANCH=${BASE_BRANCH:-main}
 DRY_RUN=${DRY_RUN:-0}
+SKIP_FORMAT=${SKIP_FORMAT:-0}
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 run() {
     if [ "$DRY_RUN" = 1 ]; then
@@ -69,14 +76,41 @@ if [ "$DRY_RUN" != 1 ]; then
 fi
 
 git switch --quiet -C "$branch" "origin/$BASE_BRANCH"
-if git merge --no-ff --no-edit -m "$title" "$sha" >/dev/null 2>&1; then
+merge_status=0
+"$SCRIPT_DIR/upstream-merge.sh" "$sha" "$title" >/dev/null || merge_status=$?
+if [ "$merge_status" -gt 1 ]; then
+    echo "::error::upstream-merge.sh failed."
+    exit "$merge_status"
+elif [ "$merge_status" -eq 0 ]; then
     echo "Merged $ref cleanly into $branch."
+
+    # Renamed code can need re-wrapping, such as lines that got longer with the longer package name.
+    if [ "$SKIP_FORMAT" != 1 ]; then
+        ./gradlew format --console=plain --quiet
+        git add -A
+        if ! git diff --cached --quiet; then
+            git commit --quiet -m "Format upstream $ref after renaming"
+            echo "Formatted upstream changes."
+        fi
+    fi
+    # Only the SPI package and the forwarding Main may keep upstream's package (see bowerbird-rename.sh).
+    leftovers=$(git ls-files \
+        | grep -e '^palantir-java-format' -e '^gradle-palantir-java-format' -e '/com/palantir/javaformat/' \
+        | grep -vE '^bowerbird-java-format-spi/src/main/java/com/palantir/javaformat/java/[^/]+$' \
+        | grep -vxF 'bowerbird-java-format/src/main/java/com/palantir/javaformat/java/Main.java' || true)
+    if [ -n "$leftovers" ]; then
+        echo "::error::Files are still under upstream's names after renaming:"
+        echo "$leftovers"
+        exit 1
+    fi
+
     run git push --force-with-lease origin "$branch"
     body=$(cat <<EOF
 Merges upstream [palantir-java-format $ref](https://github.com/palantir/palantir-java-format/releases/tag/$ref) into \`$BASE_BRANCH\`.
 
 - Upstream changes: https://github.com/palantir/palantir-java-format/compare/$(git merge-base "$sha" "origin/$BASE_BRANCH")...$sha
-- The merge had no conflicts. CI shows whether the Bowerbird rules still work with these changes.
+- The merge had no conflicts. Upstream's code was merged in Bowerbird's package and module names (\`upstream-merge.sh\`).
+- CI shows whether the Bowerbird rules still work with these changes.
 
 Opened by the upstream sync workflow.
 EOF
@@ -99,8 +133,11 @@ To resolve:
 \`\`\`bash
 git fetch upstream --tags
 git switch -c $branch origin/$BASE_BRANCH
-git merge $sha
-# resolve the conflicts, then commit and push, and open a pull request
+.github/scripts/upstream-merge.sh $sha
+# resolve the conflicts (see "Resolving upstream conflicts" in README.md), then:
+git add -A && git commit --no-edit
+./gradlew format # then commit what it changes, if anything
+# push, and open a pull request
 \`\`\`
 
 Opened by the upstream sync workflow.
