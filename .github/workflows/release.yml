@@ -31,7 +31,7 @@ jobs:
           cache-read-only: true
 
       - name: Test
-        run: ./gradlew :palantir-java-format-spi:check :palantir-java-format-jdk-bootstrap:check :palantir-java-format:check --stacktrace
+        run: ./gradlew :bowerbird-java-format-spi:check :bowerbird-java-format-jdk-bootstrap:check :bowerbird-java-format:check --stacktrace
 
       - name: Publish to GitHub Packages
         env:
@@ -39,15 +39,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: >-
           ./gradlew --stacktrace
-          :palantir-java-format-spi:publishMavenPublicationToGitHubPackagesRepository
-          :palantir-java-format-jdk-bootstrap:publishMavenPublicationToGitHubPackagesRepository
-          :palantir-java-format:publishMavenPublicationToGitHubPackagesRepository
+          :bowerbird-java-format-spi:publishMavenPublicationToGitHubPackagesRepository
+          :bowerbird-java-format-jdk-bootstrap:publishMavenPublicationToGitHubPackagesRepository
+          :bowerbird-java-format:publishMavenPublicationToGitHubPackagesRepository
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           generate_release_notes: true
           files: |
-            palantir-java-format/build/libs/*.jar
-            palantir-java-format-spi/build/libs/*.jar
-            palantir-java-format-jdk-bootstrap/build/libs/*.jar
+            bowerbird-java-format/build/libs/*.jar
+            bowerbird-java-format-spi/build/libs/*.jar
+            bowerbird-java-format-jdk-bootstrap/build/libs/*.jar

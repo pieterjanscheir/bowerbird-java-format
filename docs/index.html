@@ -252,7 +252,7 @@ details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
 <p>Every release also attaches the jars to its <a href="https://github.com/pieterjanscheir/bowerbird-java-format/releases">GitHub Release</a>, if you prefer to download them.</p>
 
 <h2 id="gradle">Using it with Gradle</h2>
-<p>Module folders and Java packages (<code>com.palantir.javaformat</code>) are deliberately unchanged, so the upstream Gradle plugin can load Bowerbird. Apply the plugin and point it at Bowerbird instead of the default formatter:</p>
+<p>The SPI classes and the main class keep their upstream names (<code>com.palantir.javaformat.java</code>), so the upstream Gradle plugin can load Bowerbird. Apply the plugin and point it at Bowerbird instead of the default formatter:</p>
 <pre><code>plugins {
     id 'com.palantir.java-format' version '&lt;upstream version Bowerbird is based on&gt;'
 }
@@ -289,9 +289,9 @@ continuationIndent: 4</code></pre>
 
 <h3 id="command-line">On the command line</h3>
 <p>For pre-commit hooks, CI scripts and other tools that run the formatter directly, build the command-line launcher and pass the settings file with <code>--config</code>:</p>
-<pre><code>./gradlew :palantir-java-format:installDist
+<pre><code>./gradlew :bowerbird-java-format:installDist
 export JAVA_OPTS="$(for p in api code file parser tree util; do printf -- '--add-exports=jdk.compiler/com.sun.tools.javac.%s=ALL-UNNAMED ' $p; done)"
-palantir-java-format/build/install/palantir-java-format/bin/palantir-java-format \
+bowerbird-java-format/build/install/bowerbird-java-format/bin/bowerbird-java-format \
     --config bowerbird.yml --replace src/main/java/Example.java</code></pre>
 <p>The <code>JAVA_OPTS</code> line is needed on JDK 16 and later: the formatter uses the JDK's own Java parser, which the JDK only opens up with these flags. An invalid settings file stops with a one-line error and exit code 2.</p>
 <p><code>--palantir</code> without <code>--config</code> uses a <code>bowerbird.yml</code> on the classpath, or Bowerbird's defaults.</p>
@@ -1551,16 +1551,16 @@ void check(int x) {
 
 <h2 id="building">Building</h2>
 <p>You need JDK 21. The Gradle wrapper downloads everything else.</p>
-<pre><code>./gradlew :palantir-java-format:test</code></pre>
+<pre><code>./gradlew :bowerbird-java-format:test</code></pre>
 <p>To try a local build in another project, publish it to Maven Local and add <code>mavenLocal()</code> to that project's repositories:</p>
-<pre><code>./gradlew :palantir-java-format-spi:publishToMavenLocal \
-    :palantir-java-format-jdk-bootstrap:publishToMavenLocal \
-    :palantir-java-format:publishToMavenLocal</code></pre>
+<pre><code>./gradlew :bowerbird-java-format-spi:publishToMavenLocal \
+    :bowerbird-java-format-jdk-bootstrap:publishToMavenLocal \
+    :bowerbird-java-format:publishToMavenLocal</code></pre>
 <p>CI runs <code>./gradlew build</code>, which also runs Error Prone and the project's own format check, and fails when the build changes tracked files.</p>
 
 <h2 id="adding-rules">Adding a formatting rule</h2>
 <ol>
-  <li>Add a <code>YourRule.input</code> and <code>YourRule.output</code> pair to <code>palantir-java-format/src/test/resources/com/palantir/javaformat/java/bowerbird-testdata/</code>. <code>BowerbirdIntegrationTest</code> picks them up.</li>
+  <li>Add a <code>YourRule.input</code> and <code>YourRule.output</code> pair to <code>bowerbird-java-format/src/test/resources/io/github/pieterjanscheir/bowerbird/java/bowerbird-testdata/</code>. <code>BowerbirdIntegrationTest</code> picks them up.</li>
   <li>Add the setting to <code>BowerbirdRules</code> (with its default) and to the table in <code>BowerbirdConfig</code>, so <code>bowerbird.yml</code> can set it.</li>
   <li>Change the formatter, usually in <code>JavaInputAstVisitor.java</code>, behind <code>rule(BowerbirdRules::yourSetting)</code>, so upstream styles and their tests are unaffected.</li>
   <li>To test the non-default value, add a <code>YourRule.yml</code> next to the input and output files; <code>BowerbirdIntegrationTest</code> applies it to that test case.</li>
