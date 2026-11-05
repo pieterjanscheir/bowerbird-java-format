@@ -176,11 +176,11 @@ public final class Main {
                         errWriter.println(path + ":" + diagnostic.toString());
                     }
                 } else {
+                    // Bowerbird: print the cause's type and message, not its stack trace.
                     errWriter.println(path + ": error: "
                             + Optional.ofNullable(e.getCause())
-                                    .map(Throwable::getMessage)
+                                    .map(Throwable::toString)
                                     .orElse("null"));
-                    Optional.ofNullable(e.getCause()).ifPresent(cause -> cause.printStackTrace(errWriter));
                 }
                 allOk = false;
                 continue;
@@ -251,7 +251,7 @@ public final class Main {
         } catch (IllegalArgumentException e) {
             throw new UsageException(Objects.requireNonNullElse(e.getMessage(), "null"));
         } catch (Throwable t) {
-            t.printStackTrace();
+            // Bowerbird: the message reaches the user through UsageException, without a stack trace.
             throw new UsageException(Objects.requireNonNullElse(t.getMessage(), "null"));
         }
         int filesToFormat = parameters.files().size();

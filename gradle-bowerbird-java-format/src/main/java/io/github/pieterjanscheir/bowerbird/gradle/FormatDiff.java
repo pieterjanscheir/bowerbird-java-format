@@ -101,8 +101,7 @@ final class FormatDiff {
         try {
             input = new String(Files.readAllBytes(diff.path), UTF_8);
         } catch (IOException e) {
-            System.err.println("Failed to read file " + diff.path);
-            e.printStackTrace(System.err);
+            System.err.println("Failed to read file " + diff.path + ": " + e.getMessage());
             return;
         }
 
@@ -114,8 +113,7 @@ final class FormatDiff {
             String output = applyReplacements(input, replacements);
             Files.write(diff.path, output.getBytes(UTF_8));
         } catch (IOException | FormatterException e) {
-            System.err.println("Failed to format file " + diff.path);
-            e.printStackTrace(System.err);
+            System.err.println("Failed to format file " + diff.path + ": " + e.getMessage());
         }
     }
 
