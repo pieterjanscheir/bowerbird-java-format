@@ -26,11 +26,17 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -130,21 +136,76 @@ public final class Main {
 
         if (parameters.stdin()) {
             return formatStdin(parameters, options);
-        } else {
-            return formatFiles(parameters, options);
         }
+        List<String> files;
+        try {
+            files = expandFolders(parameters.files());
+        } catch (IOException | UncheckedIOException e) {
+            errWriter.println("error: could not list the files in a folder: " + e.getMessage());
+            return 2;
+        }
+        if (files.isEmpty()) {
+            return 0;
+        }
+        if (parameters.isSelection() && files.size() != 1) {
+            throw new UsageException("partial formatting is only support for a single file");
+        }
+        return formatFiles(parameters, options, files);
+    }
+
+    /**
+     * Bowerbird: the file arguments, with each folder replaced by the {@code .java} files under it, in sorted order.
+     * Hidden folders and folders named {@code build} or {@code target} are skipped, since they hold generated code.
+     * Without this, a folder was skipped as a non-Java file and the run still passed.
+     */
+    static List<String> expandFolders(List<String> arguments) throws IOException {
+        List<String> files = new ArrayList<>();
+        for (String argument : arguments) {
+            Path path = Paths.get(argument);
+            if (!Files.isDirectory(path)) {
+                files.add(argument);
+                continue;
+            }
+            List<Path> found = new ArrayList<>();
+            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    return !dir.equals(path)
+                                    && isSkippedFolder(dir.getFileName().toString())
+                            ? FileVisitResult.SKIP_SUBTREE
+                            : FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (attrs.isRegularFile() && file.getFileName().toString().endsWith(".java")) {
+                        found.add(file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            Collections.sort(found);
+            for (Path file : found) {
+                files.add(file.toString());
+            }
+        }
+        return files;
+    }
+
+    private static boolean isSkippedFolder(String name) {
+        return name.startsWith(".") || name.equals("build") || name.equals("target");
     }
 
     @SuppressWarnings("for-rollout:RedundantControlFlow")
-    private int formatFiles(CommandLineOptions parameters, JavaFormatterOptions options) {
-        int numThreads = Math.min(MAX_THREADS, parameters.files().size());
+    private int formatFiles(CommandLineOptions parameters, JavaFormatterOptions options, List<String> files) {
+        int numThreads = Math.min(MAX_THREADS, files.size());
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
 
         Map<Path, String> inputs = new LinkedHashMap<>();
         Map<Path, Future<String>> results = new LinkedHashMap<>();
         boolean allOk = true;
 
-        for (String fileName : parameters.files()) {
+        for (String fileName : files) {
             if (!fileName.endsWith(".java")) {
                 errWriter.println("Skipping non-Java file: " + fileName);
                 continue;

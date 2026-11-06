@@ -518,6 +518,65 @@ public class MainTest {
         assertThat(out.toString()).isEqualTo(joiner.join(expected));
     }
 
+    // Bowerbird: a folder argument is searched for Java files instead of being skipped (issue #45).
+    @Test
+    public void folderIsSearchedForJavaFiles() throws Exception {
+        Path src = testFolder.resolve("src");
+        Path unformatted = write(src.resolve("a/A.java"), "class A {  int x;}\n");
+        write(src.resolve("B.java"), "class B {}\n");
+        write(src.resolve("build/Generated.java"), "class Generated {  int x;}\n");
+        write(src.resolve(".hidden/Hidden.java"), "class Hidden {  int x;}\n");
+        write(src.resolve("target/Target.java"), "class Target {  int x;}\n");
+        write(src.resolve("notes.txt"), "not Java\n");
+
+        StringWriter out = new StringWriter();
+        StringWriter err = new StringWriter();
+        Main main = new Main(new PrintWriter(out, true), new PrintWriter(err, true), System.in);
+        int exitCode = main.format("--dry-run", "--set-exit-if-changed", src.toString());
+
+        assertThat(exitCode).isEqualTo(1);
+        assertThat(out.toString().trim()).isEqualTo(unformatted.toString());
+        assertThat(err.toString()).isEmpty();
+    }
+
+    @Test
+    public void folderIsFormattedInPlace() throws Exception {
+        Path src = testFolder.resolve("src");
+        Path file = write(src.resolve("a/A.java"), "class A {  int x;}\n");
+
+        Main main = new Main(
+                new PrintWriter(new StringWriter(), true), new PrintWriter(new StringWriter(), true), System.in);
+        assertThat(main.format("--replace", src.toString())).isEqualTo(0);
+        assertThat(new String(Files.readAllBytes(file), UTF_8)).isEqualTo("class A {\n  int x;\n}\n");
+
+        StringWriter out = new StringWriter();
+        main = new Main(new PrintWriter(out, true), new PrintWriter(new StringWriter(), true), System.in);
+        assertThat(main.format("--dry-run", "--set-exit-if-changed", src.toString()))
+                .isEqualTo(0);
+        assertThat(out.toString()).isEmpty();
+    }
+
+    @Test
+    public void folderWithoutJavaFilesPasses() throws Exception {
+        Path empty = Files.createDirectories(testFolder.resolve("empty"));
+        Main main = new Main(
+                new PrintWriter(new StringWriter(), true), new PrintWriter(new StringWriter(), true), System.in);
+        assertThat(main.format("--dry-run", "--set-exit-if-changed", empty.toString()))
+                .isEqualTo(0);
+    }
+
+    @Test
+    public void skippedFolderNameIsSearchedWhenGivenDirectly() throws Exception {
+        Path build = testFolder.resolve("build");
+        Path file = write(build.resolve("Generated.java"), "class Generated {}\n");
+        assertThat(Main.expandFolders(ImmutableList.of(build.toString()))).containsExactly(file.toString());
+    }
+
+    private static Path write(Path path, String contents) throws Exception {
+        Files.createDirectories(path.getParent());
+        return Files.write(path, contents.getBytes(UTF_8));
+    }
+
     private static ProcessBuilder formatterMain(String... args) {
         return new ProcessBuilder(ImmutableList.<String>builder()
                         .add(Paths.get(System.getProperty("java.home"))
