@@ -58,7 +58,8 @@ See [Default style](https://pieterjanscheir.github.io/bowerbird-java-format/#rul
 
 Releases are published to GitHub Packages, which needs a personal access token with the `read:packages`
 scope, even for public packages. The jars are also attached to each [GitHub Release](https://github.com/pieterjanscheir/bowerbird-java-format/releases),
-with a `bowerbird-<version>.zip` command-line launcher and its `SHA256SUMS`.
+with a `bowerbird-<version>.zip` command-line launcher, native binaries for Linux, macOS and Windows, and
+their `SHA256SUMS`.
 
 Apply the upstream Gradle plugin and point it at Bowerbird instead of the default formatter:
 
