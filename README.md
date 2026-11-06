@@ -57,7 +57,8 @@ See [Default style](https://pieterjanscheir.github.io/bowerbird-java-format/#rul
 | JDK bootstrap | `io.github.pieterjanscheir.bowerbird:bowerbird-java-format-jdk-bootstrap` |
 
 Releases are published to GitHub Packages, which needs a personal access token with the `read:packages`
-scope, even for public packages. The jars are also attached to each [GitHub Release](https://github.com/pieterjanscheir/bowerbird-java-format/releases).
+scope, even for public packages. The jars are also attached to each [GitHub Release](https://github.com/pieterjanscheir/bowerbird-java-format/releases),
+with a `bowerbird-<version>.zip` command-line launcher and its `SHA256SUMS`.
 
 Apply the upstream Gradle plugin and point it at Bowerbird instead of the default formatter:
 
@@ -155,7 +156,8 @@ git fetch upstream --tags
 ## Releasing
 
 Push a version tag. [release.yml](./.github/workflows/release.yml) runs the tests, publishes the three
-artifacts to GitHub Packages and creates a GitHub Release with the jars and generated release notes.
+artifacts to GitHub Packages and creates a GitHub Release with the jars, the launcher zip, its checksums and
+generated release notes.
 
 ```bash
 git tag 1.0.0
