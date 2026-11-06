@@ -76,6 +76,15 @@ public class CommandLineOptionsParserTest {
     }
 
     @Test
+    public void bowerbird() {
+        for (String flag : Arrays.asList("--bowerbird", "-bowerbird", "--palantir", "-palantir")) {
+            assertThat(CommandLineOptionsParser.parse(Arrays.asList(flag)).palantirStyle())
+                    .as(flag)
+                    .isTrue();
+        }
+    }
+
+    @Test
     public void help() {
         assertThat(CommandLineOptionsParser.parse(Arrays.asList("-help")).help())
                 .isTrue();
