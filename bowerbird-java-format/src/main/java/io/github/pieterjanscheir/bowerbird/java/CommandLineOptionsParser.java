@@ -94,6 +94,9 @@ final class CommandLineOptionsParser {
                 case "-a":
                     optionsBuilder.aosp(true);
                     break;
+                // Bowerbird: --palantir stays because the upstream plugins pass it; both use Bowerbird's rules.
+                case "--bowerbird":
+                case "-bowerbird":
                 case "--palantir":
                 case "-palantir":
                     optionsBuilder.palantirStyle(true);
