@@ -139,16 +139,16 @@ public final class Main {
         }
         List<String> files;
         try {
-            files = expandFolders(parameters.files());
+            files = expandFolders(parameters.files(), errWriter);
         } catch (IOException | UncheckedIOException e) {
             errWriter.println("error: could not list the files in a folder: " + e.getMessage());
             return 2;
         }
-        if (files.isEmpty()) {
-            return 0;
-        }
         if (parameters.isSelection() && files.size() != 1) {
             throw new UsageException("partial formatting is only support for a single file");
+        }
+        if (files.isEmpty()) {
+            return 0;
         }
         return formatFiles(parameters, options, files);
     }
@@ -156,9 +156,10 @@ public final class Main {
     /**
      * Bowerbird: the file arguments, with each folder replaced by the {@code .java} files under it, in sorted order.
      * Hidden folders and folders named {@code build} or {@code target} are skipped, since they hold generated code.
-     * Without this, a folder was skipped as a non-Java file and the run still passed.
+     * A folder without Java files gets a warning on {@code err}. Without this, a folder was skipped as a non-Java file
+     * and the run still passed.
      */
-    static List<String> expandFolders(List<String> arguments) throws IOException {
+    static List<String> expandFolders(List<String> arguments, PrintWriter err) throws IOException {
         List<String> files = new ArrayList<>();
         for (String argument : arguments) {
             Path path = Paths.get(argument);
@@ -166,11 +167,14 @@ public final class Main {
                 files.add(argument);
                 continue;
             }
+            // Walk from "<folder>/." so that a symbolic link to a folder, given directly, is walked too. Links inside
+            // the folder aren't followed, so a link loop can't hang the run.
+            Path start = path.resolve(".");
             List<Path> found = new ArrayList<>();
-            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+            Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return !dir.equals(path)
+                    return !dir.equals(start)
                                     && isSkippedFolder(dir.getFileName().toString())
                             ? FileVisitResult.SKIP_SUBTREE
                             : FileVisitResult.CONTINUE;
@@ -179,11 +183,14 @@ public final class Main {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     if (attrs.isRegularFile() && file.getFileName().toString().endsWith(".java")) {
-                        found.add(file);
+                        found.add(path.resolve(start.relativize(file)));
                     }
                     return FileVisitResult.CONTINUE;
                 }
             });
+            if (found.isEmpty()) {
+                err.println("warning: no Java files found in " + argument);
+            }
             Collections.sort(found);
             for (Path file : found) {
                 files.add(file.toString());

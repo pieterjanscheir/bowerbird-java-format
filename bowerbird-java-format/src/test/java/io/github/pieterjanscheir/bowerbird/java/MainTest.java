@@ -17,6 +17,7 @@ package io.github.pieterjanscheir.bowerbird.java;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -24,6 +25,7 @@ import com.google.common.io.ByteStreams;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -559,17 +561,53 @@ public class MainTest {
     @Test
     public void folderWithoutJavaFilesPasses() throws Exception {
         Path empty = Files.createDirectories(testFolder.resolve("empty"));
-        Main main = new Main(
-                new PrintWriter(new StringWriter(), true), new PrintWriter(new StringWriter(), true), System.in);
+        StringWriter err = new StringWriter();
+        Main main = new Main(new PrintWriter(new StringWriter(), true), new PrintWriter(err, true), System.in);
         assertThat(main.format("--dry-run", "--set-exit-if-changed", empty.toString()))
                 .isEqualTo(0);
+        assertThat(err.toString().trim()).isEqualTo("warning: no Java files found in " + empty);
+    }
+
+    @Test
+    public void symbolicLinkToFolderIsSearched() throws Exception {
+        Path real = testFolder.resolve("real");
+        write(real.resolve("A.java"), "class A {  int x;}\n");
+        Path link = testFolder.resolve("link");
+        try {
+            Files.createSymbolicLink(link, real);
+        } catch (UnsupportedOperationException | IOException e) {
+            return; // no symbolic links on this file system
+        }
+        assertThat(Main.expandFolders(ImmutableList.of(link.toString()), new PrintWriter(new StringWriter())))
+                .containsExactly(link.resolve("A.java").toString());
+    }
+
+    @Test
+    public void selectionWithFolderNeedsExactlyOneFile() throws Exception {
+        Path one = testFolder.resolve("one");
+        Path file = write(one.resolve("A.java"), "class A {\n  int x;\n  int  y;\n}\n");
+        Main main = new Main(
+                new PrintWriter(new StringWriter(), true), new PrintWriter(new StringWriter(), true), System.in);
+        assertThat(main.format("--replace", "--lines", "3", one.toString())).isEqualTo(0);
+        assertThat(new String(Files.readAllBytes(file), UTF_8)).isEqualTo("class A {\n  int x;\n  int y;\n}\n");
+
+        write(one.resolve("B.java"), "class B {}\n");
+        Main twoFiles = new Main(
+                new PrintWriter(new StringWriter(), true), new PrintWriter(new StringWriter(), true), System.in);
+        assertThrows(UsageException.class, () -> twoFiles.format("--lines", "1", one.toString()));
+
+        Path empty = Files.createDirectories(testFolder.resolve("none"));
+        Main noFiles = new Main(
+                new PrintWriter(new StringWriter(), true), new PrintWriter(new StringWriter(), true), System.in);
+        assertThrows(UsageException.class, () -> noFiles.format("--lines", "1", empty.toString()));
     }
 
     @Test
     public void skippedFolderNameIsSearchedWhenGivenDirectly() throws Exception {
         Path build = testFolder.resolve("build");
         Path file = write(build.resolve("Generated.java"), "class Generated {}\n");
-        assertThat(Main.expandFolders(ImmutableList.of(build.toString()))).containsExactly(file.toString());
+        assertThat(Main.expandFolders(ImmutableList.of(build.toString()), new PrintWriter(new StringWriter())))
+                .containsExactly(file.toString());
     }
 
     private static Path write(Path path, String contents) throws Exception {
