@@ -109,6 +109,10 @@ class FormatFileCallable implements Callable<String> {
     }
 
     private String fixImports(String input) throws FormatterException {
+        // Bowerbird: imports inside a @formatter:off region are left as written (issue #22).
+        if (FormatterTags.coversImports(input, rules)) {
+            return input;
+        }
         if (parameters.removeUnusedImports()) {
             input = RemoveUnusedImports.removeUnusedImports(input);
         }

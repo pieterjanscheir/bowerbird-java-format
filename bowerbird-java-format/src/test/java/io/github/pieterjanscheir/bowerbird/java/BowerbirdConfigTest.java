@@ -66,6 +66,10 @@ class BowerbirdConfigTest {
               blankLineAfterParams: false
               blankLineAfterReturn: false
               singleSpaceAfterTagName: false
+            formatterTags:
+              enabled: true
+              off: "fmt:off"
+              on: "fmt:on"
             """;
 
         BowerbirdRules rules = BowerbirdConfig.parse(yaml, "test");
@@ -93,8 +97,11 @@ class BowerbirdConfigTest {
                         .javadocBlankLineAfterParams(false)
                         .javadocBlankLineAfterReturn(false)
                         .javadocSingleSpaceAfterTagName(false)
+                        .formatterTags(true)
+                        .formatterOffTag("fmt:off")
+                        .formatterOnTag("fmt:on")
                         .build());
-        assertThat(BowerbirdConfig.settingNames()).hasSize(21);
+        assertThat(BowerbirdConfig.settingNames()).hasSize(24);
     }
 
     @Test
@@ -172,6 +179,21 @@ class BowerbirdConfigTest {
 
     @Test
     void invalid_values_are_errors() {
+        assertThatThrownBy(() -> BowerbirdConfig.parse("formatterTags:\n  off: \" \"\n", "test"))
+                .isInstanceOf(BowerbirdConfigException.class)
+                .hasMessageContaining("formatterTags.off must not be empty");
+        assertThatThrownBy(() -> BowerbirdConfig.parse("formatterTags:\n  off: \"// foo\"\n", "test"))
+                .isInstanceOf(BowerbirdConfigException.class)
+                .hasMessageContaining("formatterTags.off must not contain spaces, / or *");
+        assertThatThrownBy(() -> BowerbirdConfig.parse("formatterTags:\n  off: \"fmt\u00A0off\"\n", "test"))
+                .isInstanceOf(BowerbirdConfigException.class)
+                .hasMessageContaining("formatterTags.off must not contain spaces, / or *");
+        assertThatThrownBy(() -> BowerbirdConfig.parse("formatterTags:\n  on: \"fmt on\"\n", "test"))
+                .isInstanceOf(BowerbirdConfigException.class)
+                .hasMessageContaining("formatterTags.on must not contain spaces, / or *");
+        assertThatThrownBy(() -> BowerbirdConfig.parse("formatterTags:\n  on: 3\n", "test"))
+                .isInstanceOf(BowerbirdConfigException.class)
+                .hasMessageContaining("formatterTags.on must be text");
         assertThatThrownBy(() -> BowerbirdConfig.parse("lineLength: 10\n", "test"))
                 .isInstanceOf(BowerbirdConfigException.class)
                 .hasMessageContaining("lineLength must be at least 40");
