@@ -14,6 +14,7 @@
 
 package io.github.pieterjanscheir.bowerbird.java;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import java.util.List;
@@ -386,7 +387,8 @@ public final class BowerbirdRules {
             }
             // Formatting adds a space after `//` and reflows JavaDoc at whitespace, so a tag with comment syntax or
             // whitespace could appear or break apart only after formatting.
-            if (tag.chars().anyMatch(c -> Character.isWhitespace(c) || c == '/' || c == '*')) {
+            // Guava's whitespace, the definition the comment wrapping uses, which includes a non-breaking space.
+            if (CharMatcher.whitespace().or(CharMatcher.anyOf("/*")).matchesAnyOf(tag)) {
                 throw new IllegalArgumentException(
                         name + " must not contain spaces, / or *, like @formatter:off; got \"" + tag + "\"");
             }

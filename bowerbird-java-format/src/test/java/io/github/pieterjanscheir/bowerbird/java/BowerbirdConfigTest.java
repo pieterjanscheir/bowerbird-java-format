@@ -185,6 +185,9 @@ class BowerbirdConfigTest {
         assertThatThrownBy(() -> BowerbirdConfig.parse("formatterTags:\n  off: \"// foo\"\n", "test"))
                 .isInstanceOf(BowerbirdConfigException.class)
                 .hasMessageContaining("formatterTags.off must not contain spaces, / or *");
+        assertThatThrownBy(() -> BowerbirdConfig.parse("formatterTags:\n  off: \"fmt\u00A0off\"\n", "test"))
+                .isInstanceOf(BowerbirdConfigException.class)
+                .hasMessageContaining("formatterTags.off must not contain spaces, / or *");
         assertThatThrownBy(() -> BowerbirdConfig.parse("formatterTags:\n  on: \"fmt on\"\n", "test"))
                 .isInstanceOf(BowerbirdConfigException.class)
                 .hasMessageContaining("formatterTags.on must not contain spaces, / or *");
