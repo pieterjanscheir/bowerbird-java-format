@@ -57,12 +57,22 @@ final class FormatterTags {
         }
         Integer start = null;
         for (Input.Tok comment : comments.values()) {
+            // Read the markers in order, so a comment can close the region it opens.
             String text = comment.getOriginalText();
-            if (start == null && text.contains(rules.formatterOffTag())) {
-                start = comment.getPosition();
-            } else if (start != null && text.contains(rules.formatterOnTag())) {
-                regions.add(Range.closedOpen(start, comment.getPosition() + comment.length()));
-                start = null;
+            int from = 0;
+            while (true) {
+                String marker = start == null ? rules.formatterOffTag() : rules.formatterOnTag();
+                int at = text.indexOf(marker, from);
+                if (at < 0) {
+                    break;
+                }
+                if (start == null) {
+                    start = comment.getPosition();
+                } else {
+                    regions.add(Range.closedOpen(start, comment.getPosition() + comment.length()));
+                    start = null;
+                }
+                from = at + marker.length();
             }
         }
         if (start != null) {
@@ -94,6 +104,13 @@ final class FormatterTags {
         if (before.size() != after.size()) {
             return null;
         }
+        // Each region starts with its off comment, which formatting may only re-indent or wrap after the first line,
+        // so a different first line means the regions don't correspond.
+        for (int i = 0; i < before.size(); i++) {
+            if (!firstLine(input, before.get(i)).equals(firstLine(output, after.get(i)))) {
+                return null;
+            }
+        }
         StringBuilder result = new StringBuilder();
         int last = 0;
         for (int i = 0; i < before.size(); i++) {
@@ -102,6 +119,12 @@ final class FormatterTags {
             last = after.get(i).upperEndpoint();
         }
         return result.append(output.substring(last)).toString();
+    }
+
+    private static String firstLine(String text, Range<Integer> region) {
+        String regionText = text.substring(region.lowerEndpoint(), region.upperEndpoint());
+        int end = regionText.indexOf('\n');
+        return (end < 0 ? regionText : regionText.substring(0, end)).trim();
     }
 
     /**

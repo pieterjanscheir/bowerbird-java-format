@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.errorprone.annotations.Immutable;
@@ -392,7 +393,16 @@ public final class Formatter {
         // TODO(cushon): this is only safe because the modifier ordering doesn't affect whitespace,
         // and doesn't change the replacements that are output. This is not true in general for
         // 'de-linting' changes (e.g. import ordering).
-        javaInput = ModifierOrderer.reorderModifiers(javaInput, characterRanges);
+        // Bowerbird: modifiers inside a @formatter:off region aren't reordered, so no token moves across its markers.
+        RangeSet<Integer> offRegions = FormatterTags.offRegions(javaInput, rules);
+        Collection<Range<Integer>> modifierRanges = characterRanges;
+        if (!offRegions.isEmpty()) {
+            RangeSet<Integer> outside = TreeRangeSet.create();
+            characterRanges.forEach(outside::add);
+            outside.removeAll(offRegions);
+            modifierRanges = outside.asRanges();
+        }
+        javaInput = ModifierOrderer.reorderModifiers(javaInput, modifierRanges);
 
         JavaCommentsHelper commentsHelper = new JavaCommentsHelper(javaInput.getLineSeparator(), options, rules);
         JavaOutput javaOutput;
@@ -406,7 +416,6 @@ public final class Formatter {
         // Bowerbird: @formatter:off regions are formatted like the rest, then their original text is put back (issue
         // #22). The regions are delimited by comments, which formatting keeps in order, so the n-th region of the
         // output is the n-th region of the input.
-        RangeSet<Integer> offRegions = FormatterTags.offRegions(javaInput, rules);
         if (offRegions.isEmpty()) {
             return replacements;
         }
