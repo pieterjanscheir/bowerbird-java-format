@@ -130,6 +130,12 @@ public final class Formatter {
         return new Formatter(options, false, rules);
     }
 
+    /** Bowerbird: the rules this formatter applies, or {@code null} for an upstream style. */
+    @Nullable
+    BowerbirdRules rules() {
+        return rules;
+    }
+
     /** Bowerbird: the maximum line length, from the rules when there are any. */
     private int maxLineLength() {
         return rules != null ? rules.lineLength() : options.maxLineLength();
@@ -331,8 +337,11 @@ public final class Formatter {
      * Style Guide - 3.3.3 Import ordering and spacing</a>
      */
     public String formatSourceAndFixImports(String input) throws FormatterException {
-        input = reorderImports(input);
-        input = RemoveUnusedImports.removeUnusedImports(input);
+        // Bowerbird: imports inside a @formatter:off region are left as written (issue #22).
+        if (!FormatterTags.coversImports(input, rules)) {
+            input = reorderImports(input);
+            input = RemoveUnusedImports.removeUnusedImports(input);
+        }
         String formatted = formatSource(input);
         formatted = StringWrapper.wrap(maxLineLength(), formatted, this);
         return formatted;
@@ -348,6 +357,10 @@ public final class Formatter {
      * Style Guide - 3.3.3 Import ordering and spacing</a>
      */
     public String fixImports(String input) throws FormatterException {
+        // Bowerbird: imports inside a @formatter:off region are left as written (issue #22).
+        if (FormatterTags.coversImports(input, rules)) {
+            return input;
+        }
         return reorderImports(RemoveUnusedImports.removeUnusedImports(input));
     }
 
@@ -389,6 +402,22 @@ public final class Formatter {
             throw new FormatterException(e.diagnostics());
         }
         RangeSet<Integer> tokenRangeSet = javaInput.characterRangesToTokenRanges(characterRanges);
-        return javaOutput.getFormatReplacements(tokenRangeSet);
+        ImmutableList<Replacement> replacements = javaOutput.getFormatReplacements(tokenRangeSet);
+        // Bowerbird: @formatter:off regions are formatted like the rest, then their original text is put back (issue
+        // #22). The regions are delimited by comments, which formatting keeps in order, so the n-th region of the
+        // output is the n-th region of the input.
+        RangeSet<Integer> offRegions = FormatterTags.offRegions(javaInput, rules);
+        if (offRegions.isEmpty()) {
+            return replacements;
+        }
+        String output = Utils.applyReplacements(input, replacements);
+        String restored = FormatterTags.restore(input, offRegions, output, rules);
+        if (restored == null) {
+            // The regions couldn't be matched up; leave the file as written rather than risk changing a region.
+            return ImmutableList.of();
+        }
+        return restored.equals(input)
+                ? ImmutableList.of()
+                : ImmutableList.of(Replacement.create(0, input.length(), restored));
     }
 }

@@ -58,6 +58,9 @@ public final class BowerbirdRules {
     private final boolean javadocBlankLineAfterParams;
     private final boolean javadocBlankLineAfterReturn;
     private final boolean javadocSingleSpaceAfterTagName;
+    private final boolean formatterTags;
+    private final String formatterOffTag;
+    private final String formatterOnTag;
 
     private BowerbirdRules(Builder b) {
         this.lineLength = b.lineLength;
@@ -81,6 +84,9 @@ public final class BowerbirdRules {
         this.javadocBlankLineAfterParams = b.javadocBlankLineAfterParams;
         this.javadocBlankLineAfterReturn = b.javadocBlankLineAfterReturn;
         this.javadocSingleSpaceAfterTagName = b.javadocSingleSpaceAfterTagName;
+        this.formatterTags = b.formatterTags;
+        this.formatterOffTag = b.formatterOffTag;
+        this.formatterOnTag = b.formatterOnTag;
     }
 
     /** Bowerbird's own style: what you get without a {@code bowerbird.yml}. */
@@ -215,6 +221,24 @@ public final class BowerbirdRules {
         return blankLineBetweenImportGroups;
     }
 
+    /**
+     * Leave the code between a comment containing {@link #formatterOffTag()} and one containing
+     * {@link #formatterOnTag()} as written (IntelliJ's formatter markers). Off by default.
+     */
+    public boolean formatterTags() {
+        return formatterTags;
+    }
+
+    /** The text that marks the start of a region the formatter leaves alone, {@code @formatter:off} by default. */
+    public String formatterOffTag() {
+        return formatterOffTag;
+    }
+
+    /** The text that marks the end of such a region, {@code @formatter:on} by default. */
+    public String formatterOnTag() {
+        return formatterOnTag;
+    }
+
     /** Apply the {@code javadoc} rules below; when false, JavaDoc is left as written. */
     public boolean javadocLayout() {
         return javadocLayout;
@@ -269,7 +293,10 @@ public final class BowerbirdRules {
                 && javadocBlankLineAfterDescription == o.javadocBlankLineAfterDescription
                 && javadocBlankLineAfterParams == o.javadocBlankLineAfterParams
                 && javadocBlankLineAfterReturn == o.javadocBlankLineAfterReturn
-                && javadocSingleSpaceAfterTagName == o.javadocSingleSpaceAfterTagName;
+                && javadocSingleSpaceAfterTagName == o.javadocSingleSpaceAfterTagName
+                && formatterTags == o.formatterTags
+                && formatterOffTag.equals(o.formatterOffTag)
+                && formatterOnTag.equals(o.formatterOnTag);
     }
 
     @Override
@@ -295,7 +322,10 @@ public final class BowerbirdRules {
                 javadocBlankLineAfterDescription,
                 javadocBlankLineAfterParams,
                 javadocBlankLineAfterReturn,
-                javadocSingleSpaceAfterTagName);
+                javadocSingleSpaceAfterTagName,
+                formatterTags,
+                formatterOffTag,
+                formatterOnTag);
     }
 
     @Override
@@ -328,8 +358,33 @@ public final class BowerbirdRules {
         private boolean javadocBlankLineAfterParams = true;
         private boolean javadocBlankLineAfterReturn = true;
         private boolean javadocSingleSpaceAfterTagName = true;
+        private boolean formatterTags = false;
+        private String formatterOffTag = "@formatter:off";
+        private String formatterOnTag = "@formatter:on";
 
         private Builder() {}
+
+        public Builder formatterTags(boolean value) {
+            this.formatterTags = value;
+            return this;
+        }
+
+        public Builder formatterOffTag(String value) {
+            this.formatterOffTag = requireTag("formatterTags.off", value);
+            return this;
+        }
+
+        public Builder formatterOnTag(String value) {
+            this.formatterOnTag = requireTag("formatterTags.on", value);
+            return this;
+        }
+
+        private static String requireTag(String name, String value) {
+            if (value.trim().isEmpty()) {
+                throw new IllegalArgumentException(name + " must not be empty");
+            }
+            return value.trim();
+        }
 
         public Builder lineLength(int value) {
             this.lineLength = requireAtLeast("lineLength", value, 40);
