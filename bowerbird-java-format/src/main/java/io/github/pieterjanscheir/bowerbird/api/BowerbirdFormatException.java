@@ -53,6 +53,7 @@ public final class BowerbirdFormatException extends Exception {
             return column;
         }
 
+        /** What went wrong. */
         public String message() {
             return message;
         }

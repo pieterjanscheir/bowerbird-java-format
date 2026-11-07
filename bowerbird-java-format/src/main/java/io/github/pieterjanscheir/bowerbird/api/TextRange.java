@@ -35,24 +35,29 @@ public final class TextRange {
         return new TextRange(start, end);
     }
 
+    /** The offset of the first character in the range. */
     public int start() {
         return start;
     }
 
+    /** The offset just after the last character in the range; equal to {@link #start()} for an empty range. */
     public int end() {
         return end;
     }
 
+    /** Ranges are equal when they have the same start and end. */
     @Override
     public boolean equals(Object other) {
         return other instanceof TextRange && ((TextRange) other).start == start && ((TextRange) other).end == end;
     }
 
+    /** A hash code consistent with {@link #equals}. */
     @Override
     public int hashCode() {
         return 31 * start + end;
     }
 
+    /** The range as {@code [start, end)}. */
     @Override
     public String toString() {
         return "[" + start + ", " + end + ")";

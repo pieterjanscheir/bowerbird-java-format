@@ -27,6 +27,7 @@ public final class TextEdit {
         this.replacement = Objects.requireNonNull(replacement, "replacement");
     }
 
+    /** An edit that replaces the characters in {@code range} with {@code replacement}. */
     public static TextEdit of(TextRange range, String replacement) {
         return new TextEdit(range, replacement);
     }
@@ -36,6 +37,7 @@ public final class TextEdit {
         return range;
     }
 
+    /** The text that replaces the characters in {@link #range()}. */
     public String replacement() {
         return replacement;
     }
@@ -57,6 +59,7 @@ public final class TextEdit {
         return result.append(source, copied, source.length()).toString();
     }
 
+    /** Edits are equal when they have the same range and replacement. */
     @Override
     public boolean equals(Object other) {
         return other instanceof TextEdit
@@ -64,11 +67,13 @@ public final class TextEdit {
                 && ((TextEdit) other).replacement.equals(replacement);
     }
 
+    /** A hash code consistent with {@link #equals}. */
     @Override
     public int hashCode() {
         return 31 * range.hashCode() + replacement.hashCode();
     }
 
+    /** The edit as {@code [start, end) -> "replacement"}, for debugging. */
     @Override
     public String toString() {
         return range + " -> \"" + replacement + "\"";
