@@ -101,7 +101,7 @@ class BowerbirdConfigTest {
                         .formatterOffTag("fmt:off")
                         .formatterOnTag("fmt:on")
                         .build());
-        assertThat(BowerbirdConfig.settingNames()).hasSize(25);
+        assertThat(BowerbirdConfig.settingNames()).hasSize(26);
     }
 
     @Test
@@ -194,6 +194,9 @@ class BowerbirdConfigTest {
         assertThatThrownBy(() -> BowerbirdConfig.parse("formatterTags:\n  on: 3\n", "test"))
                 .isInstanceOf(BowerbirdConfigException.class)
                 .hasMessageContaining("formatterTags.on must be text");
+        assertThatThrownBy(() -> BowerbirdConfig.parse("wrapping:\n  methodChainColumnLimit: 0\n", "test"))
+                .isInstanceOf(BowerbirdConfigException.class)
+                .hasMessageContaining("wrapping.methodChainColumnLimit must be at least 1");
         assertThatThrownBy(() -> BowerbirdConfig.parse("lineLength: 10\n", "test"))
                 .isInstanceOf(BowerbirdConfigException.class)
                 .hasMessageContaining("lineLength must be at least 40");
