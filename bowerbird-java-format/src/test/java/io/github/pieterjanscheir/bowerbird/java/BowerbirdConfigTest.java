@@ -101,7 +101,7 @@ class BowerbirdConfigTest {
                         .formatterOffTag("fmt:off")
                         .formatterOnTag("fmt:on")
                         .build());
-        assertThat(BowerbirdConfig.settingNames()).hasSize(26);
+        assertThat(BowerbirdConfig.settingNames()).hasSize(28);
     }
 
     @Test
@@ -197,6 +197,12 @@ class BowerbirdConfigTest {
         assertThatThrownBy(() -> BowerbirdConfig.parse("wrapping:\n  methodChainColumnLimit: 0\n", "test"))
                 .isInstanceOf(BowerbirdConfigException.class)
                 .hasMessageContaining("wrapping.methodChainColumnLimit must be at least 1");
+        assertThatThrownBy(() -> BowerbirdConfig.parse("annotations:\n  fields: sideways\n", "test"))
+                .isInstanceOf(BowerbirdConfigException.class)
+                .hasMessageContaining("annotations.fields must be vertical, inline or keep, got sideways");
+        assertThatThrownBy(() -> BowerbirdConfig.parse("annotations:\n  parameters: true\n", "test"))
+                .isInstanceOf(BowerbirdConfigException.class)
+                .hasMessageContaining("annotations.parameters must be text");
         assertThatThrownBy(() -> BowerbirdConfig.parse("lineLength: 10\n", "test"))
                 .isInstanceOf(BowerbirdConfigException.class)
                 .hasMessageContaining("lineLength must be at least 40");
