@@ -101,7 +101,7 @@ class BowerbirdConfigTest {
                         .formatterOffTag("fmt:off")
                         .formatterOnTag("fmt:on")
                         .build());
-        assertThat(BowerbirdConfig.settingNames()).hasSize(28);
+        assertThat(BowerbirdConfig.settingNames()).hasSize(29);
     }
 
     @Test
