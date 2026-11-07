@@ -421,8 +421,9 @@ public final class Formatter {
         }
         String output = Utils.applyReplacements(input, replacements);
         String restored = FormatterTags.restore(input, offRegions, output, rules);
-        if (restored == null) {
-            // The regions couldn't be matched up; leave the file as written rather than risk changing a region.
+        if (restored == null || !FormatterTags.sameSyntax(input, restored)) {
+            // The regions couldn't be matched up, or putting them back changed the program (for example a modifier
+            // moved across a marker); leave the file as written rather than risk breaking it.
             return ImmutableList.of();
         }
         return restored.equals(input)

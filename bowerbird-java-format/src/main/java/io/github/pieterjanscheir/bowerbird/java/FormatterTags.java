@@ -18,6 +18,9 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 import com.palantir.javaformat.java.FormatterException;
+import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.Options;
 import io.github.pieterjanscheir.bowerbird.Input;
 import java.util.ArrayList;
 import java.util.List;
@@ -119,6 +122,24 @@ final class FormatterTags {
             last = after.get(i).upperEndpoint();
         }
         return result.append(output.substring(last)).toString();
+    }
+
+    /**
+     * Whether {@code a} and {@code b} parse to the same program, comments and layout aside. The last check before a
+     * file with regions is changed, like the one {@link StringWrapper} makes after reflowing strings.
+     */
+    static boolean sameSyntax(String a, String b) {
+        try {
+            return parse(a).toString().equals(parse(b).toString());
+        } catch (FormatterException e) {
+            return false;
+        }
+    }
+
+    private static JCTree.JCCompilationUnit parse(String source) throws FormatterException {
+        Context context = new Context();
+        Options.instance(context).put("allowStringFolding", "true");
+        return Formatter.parseJcCompilationUnit(context, source);
     }
 
     private static String firstLine(String text, Range<Integer> region) {

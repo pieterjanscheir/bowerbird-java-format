@@ -380,10 +380,17 @@ public final class BowerbirdRules {
         }
 
         private static String requireTag(String name, String value) {
-            if (value.trim().isEmpty()) {
+            String tag = value.trim();
+            if (tag.isEmpty()) {
                 throw new IllegalArgumentException(name + " must not be empty");
             }
-            return value.trim();
+            // Formatting adds a space after `//` and reflows JavaDoc at whitespace, so a tag with comment syntax or
+            // whitespace could appear or break apart only after formatting.
+            if (tag.chars().anyMatch(c -> Character.isWhitespace(c) || c == '/' || c == '*')) {
+                throw new IllegalArgumentException(
+                        name + " must not contain spaces, / or *, like @formatter:off; got \"" + tag + "\"");
+            }
+            return tag;
         }
 
         public Builder lineLength(int value) {
